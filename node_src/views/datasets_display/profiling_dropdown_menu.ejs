@@ -1,0 +1,34 @@
+<div  style="display:none" id="profile-budget-div">
+  <h2 id="profile-budget-header">Profiling Budget:</h2>
+  <br>
+
+  <select id="profile-input-machine-count", onmousedown="this.value;" onchange="change_profiling_default_amount(this.value);">
+    <option value="1">1 Worker Machine</option>
+    <option value="2">2 Worker Machines</option>
+    <option value="3">3 Worker Machines</option>
+    <option value="4" selected>4 Worker Machines</option>
+    <option value="5">5 Worker Machines</option>
+    <option value="6">6 Worker Machines</option>
+    <option value="7">7 Worker Machines</option>
+    <option value="8">8 Worker Machines</option>
+    <option value="9">9 Worker Machines</option>
+    <option value="10">10 Worker Machines</option>
+    <option value="11">11 Worker Machines</option>
+    <option value="12">12 Worker Machines</option>
+    <option value="13">13 Worker Machines</option>
+    <option value="14">14 Worker Machines</option>
+    <option value="15">15 Worker Machines</option>
+    <option value="16">16 Worker Machines</option>
+  </select>
+
+  <form method="post" action="/profile_button_submit">
+    <input id="profile-input-budget" type="text" name="budget" value="">
+    <input type="hidden" id="profile-input-dataID" name="datasetID" value="">
+    <input type="hidden" id="profile-input-bid" name="bidPerMachine" value="">
+    <input type="hidden" id="profile-input-machines" name="numberOfMachines" value="">
+    <input type="hidden" id="profile-input-machineType" name="machineType" value="">
+    <input id="profile-budget-submit" type="submit" value="Profile Dataset">
+  </form>
+  <br>
+</div>
+<br><br>

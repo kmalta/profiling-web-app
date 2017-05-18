@@ -1,0 +1,34 @@
+<head>
+  <link href=http://fonts.googleapis.com/css?family=Dosis rel=stylesheet type=text/css />
+  <link rel="stylesheet" type="text/css" href="/css/table.css" title="Table" media="all" />
+  <link rel="stylesheet" type="text/css" href="/css/loader.css" title="Table" media="all" />
+  <link rel="stylesheet" type="text/css" href="/css/dataset_upload_styles.css" title="Table" media="all" />
+  <script src="/javascript/multiple/all_pages.js" charset="utf-8"></script>
+  <script src="/javascript/dataset_upload/dataset_upload.js" charset="utf-8"></script>
+</head>
+
+
+<body>
+  <h2>DATASET NAME (Config File Name):</h2>
+
+  <br>
+    <form id="dataset_form" onSubmit="datasetGet(event);">
+      <input id="dataset-name-input" type="text" name="dataset" value="">
+      <input id="dataset-submit" type="submit" value="Get Dataset Analytics">
+    </form> 
+  <br>
+  <br>
+    <!-- Table for dataset profile. -->
+    <div id="dataset-upload-dataset-table">
+      <% include ../multiple/dataset_table %>
+    </div>
+  <br>
+  <div style="display:none" id="dataset-save-div">
+    <br>
+      <form id="save_dataset_form" onSubmit="datasetSave(event);">
+        <input  id="dataset-save-submit" type="submit" value="Save Dataset">
+      </form> 
+    <br>
+  </div>
+</body>
+
