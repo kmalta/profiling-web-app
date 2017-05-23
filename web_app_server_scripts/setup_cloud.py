@@ -112,7 +112,12 @@ def scala_send_spark_job(nodes_info, jar_path):
     for node in nodes_info:
         py_scp_to_remote('', node[0], jar_path, 'jars/' + jar_path.split('/')[-1])
 
-def scala_run_spark_job(nodes_info, worker_type, master_port, file_name, hadoop_master_port, jar, num_features, iterations, log_path):
+def euca_scala_run_spark_job(nodes_info, worker_type, master_port, file_name, hadoop_master_port, jar, num_features, iterations, log_path):
+
+    euca_instance_types = ['cg1.4xlarge', 'm1.large', 'm2.4xlarge']
+    aws_instance_types = ['c4.xlarge', 'm4.xlarge', 'r4.2xlarge']
+    worker_type = euca_instance_types[aws_instance_types.index(worker_type)]
+
     #NON-YARN
     driver_mem = ''
     executor_mem = ''
@@ -172,8 +177,69 @@ def scala_run_spark_job(nodes_info, worker_type, master_port, file_name, hadoop_
                ' ' + file_name + ' ' + str(iterations) + ' ' + str(num_partitions)]
 
 
+    print log_path
     print "@@@@@@@@@@@@@@@" + run_str[0]
     py_ssh_to_log('', nodes_info[0][0], run_str[0], log_path)
+
+
+def aws_scala_run_spark_job(nodes_info, worker_type, master_port, file_name, hadoop_master_port, jar, num_features, iterations, log_path):
+
+
+    #NON-YARN
+    driver_mem = ''
+    executor_mem = ''
+    spark_max_result = ''
+    num_machs = len(nodes_info[1:])
+    num_cores = 4*num_machs
+    num_partitions = num_cores
+
+
+    for node in nodes_info:
+        py_scp_to_remote('', node[0], 'spark_conf_files/log4j.properties', '~/spark-2.0.0/conf/log4j.properties')
+        py_scp_to_remote('', node[0], 'spark_conf_files/hadoop-log4j.properties', '~/log4j.properties')
+        py_ssh('', node[0], 'sudo mv ~/log4j.properties /usr/local/hadoop/etc/hadoop/log4j.properties')
+
+
+    #speculation_flag = ' --conf spark.speculation=true '
+    speculation_flag = ''
+    local_dir = ' --conf spark.local.dir=/mnt/spark/ '
+
+    if 'r4.2xlarge' in worker_type:
+        driver_mem = '48000m'
+        executor_mem = '48000m'
+        spark_max_result = ' --conf spark.driver.maxResultSize=8g'
+        os.system('cp spark_conf_files/r4.2xlarge.conf spark_conf_files/spark-defaults.conf')
+    elif 'm4.xlarge' in worker_type:
+        driver_mem = '11500m'
+        executor_mem = '11500m'
+        spark_max_result = ' --conf spark.driver.maxResultSize=8g'
+        os.system('cp spark_conf_files/m4.xlarge.conf spark_conf_files/spark-defaults.conf')
+    else:
+        driver_mem = '4000m'
+        executor_mem = '4000m'
+        os.system('cp spark_conf_files/c4.xlarge.conf spark_conf_files/spark-defaults.conf')
+
+    for node in nodes_info:
+        py_scp_to_remote('', node[0], 'spark_conf_files/spark-defaults.conf', '~/spark-2.0.0/conf/spark-defaults.conf')
+
+
+    run_str = ['~/spark-2.0.0/bin/spark-submit --verbose --master ' + 
+               'spark://' + nodes_info[0][1] + ':7077' + ' --deploy-mode client ' + 
+               ' --driver-memory ' + driver_mem + ' --executor-memory ' + executor_mem + 
+               ' --conf spark.shuffle.spill=false' + spark_max_result + 
+               ' --num-executors ' + str(num_machs) + 
+               ' --conf spark.default.parallelism=' + str(num_cores) + 
+               speculation_flag + local_dir + 
+               #'--conf spark.storage.memoryFraction'
+               ' file:///home/ubuntu/jars/'+ jar + ' cluster ' + 
+               str(num_features) + ' ' + nodes_info[0][1] + ' ' + str(hadoop_master_port) + 
+               ' ' + file_name + ' ' + str(iterations) + ' ' + str(num_partitions)]
+
+
+    print log_path
+    print "@@@@@@@@@@@@@@@" + run_str[0]
+    py_ssh_to_log('', nodes_info[0][0], run_str[0], log_path)
+
 
 
 def create_hdfs_site_file(nodes_info, replication, tempdir_path, idx):
@@ -262,7 +328,9 @@ def read_job_time(nodes_info, working_dir):
 
 def get_dataset(s3url, master_ip, working_dir):
     dataset = s3url.split('/')[-1]
-    py_ssh('', master_ip, 'sudo chown ubuntu:ubuntu /mnt; mkdir namenode')
+    py_ssh('', master_ip, 'sudo chown ubuntu:ubuntu /mnt; mkdir /mnt/namenode')
+
+
     get_data = 's3cmd -d -v -c ' + remote_s3cfg + ' get ' + s3url +' /mnt/' + dataset
 
     flag = 0
@@ -281,19 +349,19 @@ def get_dataset(s3url, master_ip, working_dir):
 
 
 
-def configure_machines_for_spark_job_experiments(s3url, working_dir, replication, instance_ips):
+def configure_machines_for_spark_job_experiments(s3url, profile_dir, replication, instance_ips):
 
     dataset = s3url.split('/')[-1]
-    log_dir = working_dir + '/profile_logs'
+    log_dir = profile_dir + '/profile_logs'
 
     master_ip = instance_ips[0]
-    f = open(working_dir + '/host_master', 'w')
+    f = open(profile_dir + '/host_master', 'w')
     f.write(master_ip + '\n')
     f.close()
 
     ips = instance_ips[1:]
-    nodes_info = get_all_hosts(master_ip, ips, working_dir)
-    os.system('cp temp_files/hosts_file_end ' + working_dir + '/')
+    nodes_info = get_all_hosts(master_ip, ips, profile_dir)
+    os.system('cp config_file_templates/hosts_file_end ' + profile_dir + '/')
 
 
     ###
@@ -309,11 +377,11 @@ def configure_machines_for_spark_job_experiments(s3url, working_dir, replication
         #py_ssh('', node[0], 'tar -xzf scripts_to_run_remotely.tar.gz; rm -rf scripts; mv scripts_to_run_remotely scripts')
 
 
-    get_dataset(s3url, master_ip, working_dir)
+    get_dataset(s3url, master_ip, profile_dir)
 
-    configure_hadoop(nodes_info, replication, working_dir)
-    configure_nodes(nodes_info, working_dir)
-    spark_config(nodes_info, working_dir)
+    configure_hadoop(nodes_info, replication, profile_dir)
+    configure_nodes(nodes_info, profile_dir)
+    spark_config(nodes_info, profile_dir)
     py_ssh('', master_ip, 'source scripts/restart_hadoop.sh')
     start_spark(nodes_info)
 
@@ -322,16 +390,21 @@ def configure_machines_for_spark_job_experiments(s3url, working_dir, replication
 
 
 
-def create_hdfs_file(dataset, master_ip):
+def create_hdfs_files(dataset, master_ip, comm_samples):
+    py_ssh('', master_ip, 'head -n ' + str(comm_samples) + ' /mnt/' + dataset + ' > /mnt/' + dataset + '_comm; /usr/local/hadoop/bin/hdfs dfs -put /mnt/' + dataset + '_comm /; /usr/local/hadoop/bin/hdfs dfs -ls /')
     py_ssh('', master_ip, '/usr/local/hadoop/bin/hdfs dfs -put /mnt/' + dataset + ' /; /usr/local/hadoop/bin/hdfs dfs -ls /')
 
-def clean_up_experiment(dataset, master_ip):
+def clean_up_experiment(dataset, master_ip, nodes_info):
     stop_spark(nodes_info)
     py_ssh('', master_ip, '/usr/local/hadoop/bin/hdfs dfs -rm /' + dataset + '; /usr/local/hadoop/bin/hdfs dfs -ls /')
 
 
-def run_spark_experiment(experiment, dataset, nodes_info, worker_type, jar_path, num_features, iterations, log_path):
+def euca_run_spark_experiment(dataset, nodes_info, worker_type, jar_path, num_features, iterations, log_path):
     scala_send_spark_job(nodes_info, jar_path)
     jar = jar_path.split('/')[-1]
-    scala_run_spark_job(nodes_info, worker_type, 7077, dataset, 9000, jar, num_features, iterations, log_path)
+    euca_scala_run_spark_job(nodes_info, worker_type, 7077, dataset, 9000, jar, num_features, iterations, log_path)
 
+def aws_run_spark_experiment(dataset, nodes_info, worker_type, jar_path, num_features, iterations, log_path):
+    scala_send_spark_job(nodes_info, jar_path)
+    jar = jar_path.split('/')[-1]
+    aws_scala_run_spark_job(nodes_info, worker_type, 7077, dataset, 9000, jar, num_features, iterations, log_path)

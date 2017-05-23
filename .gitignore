@@ -40,3 +40,9 @@ dump_file
 
 #File for s3 Error Checking
 s3error_check
+
+#Profiles
+profiles/*
+
+#Data configuration flies
+data_configs/*

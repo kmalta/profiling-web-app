@@ -1,9 +1,10 @@
-import sys, requests, json
+import sys, requests
 sys.path.insert(0,'.')
 from functools import wraps
 from flask import Flask, request, current_app, redirect, jsonify
 from profile_dataset import *
 from profile import *
+from byteify import *
 
 app = Flask(__name__)
 
@@ -28,21 +29,25 @@ def get_dataset_info(dataset):
     return jsonify(json_return)
 
 
-@app.route('/submit_profile/<string:profile>', methods=['GET'])
+@app.route('/submit_profile/<path:profile>', methods=['GET'])
 @support_jsonp
 def schedule_profile(profile):
-    ec2_conn = start_ec2_boto_connection()
-    s3_conn = start_s3_boto_connection()
-    profile_json = json.loads(profile)
-    reservation, save_dir, actual_bid_price = euca_spot_launch_mimicry(ec2_conn, profile_json['bidPerMachine'], profile_json['machineType'], profile_json['numberOfMachines'])
+    request_json = json_loads_byteified(profile)
+    profile_json = dict(request_json['dataset'], **request_json['profile'])
+    print profile_json
+    reservation, actual_bid_price, save_dir = euca_profile(profile_json)
+    print reservation
     ret_dict = {}
     ret_dict['reservation'] = reservation
     ret_dict['save_dir'] = save_dir
     ret_dict['actual_bid_price'] = actual_bid_price
 
+    ret_dict['comm_time'] = parse_log(save_dir, 'comm')
+    ret_dict['comp_time'] = parse_log(save_dir, 'comp')
+
     return jsonify(ret_dict)
 
-    #res = requests.post("http://127.0.0.1:5000/determine_escalation/", json=s).json()
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)

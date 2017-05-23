@@ -1,4 +1,4 @@
-import boto
+import boto, errno, time
 from boto.ec2.regioninfo import RegionInfo
 from boto.s3.key import Key
 from time import sleep, gmtime, strftime
@@ -14,14 +14,26 @@ def update_known_hosts(ips):
     for ip in ips:
         os.system('ssh-keygen -q -R ' + ip)
 
-def wait_ssh(ips):
+def wait_on_node(ip, max_time):
+    print 'Waiting on node', ip + '.'
+    times = 0
+    while(times < max_time):
+        proc = py_ssh('-o connecttimeout=3 -o UserKnownHostsFile=/dev/null', ip,'true 2>/dev/null')
+        if proc.returncode == 0:
+            return 1
+        times += 1
+    return 0
+
+def wait_ssh(ips, reservation):
+    ips_to_redo = []
     for ip in ips:
-        print 'Waiting on node', ip + '.'
-        while(1):
-            proc = py_ssh('-o connecttimeout=3', ip,'true 2>/dev/null')
-            if proc.returncode == 0:
-                break
-    return
+        wait_on_node(ip, 10)
+    for ip in ips:
+        ret_val = wait_on_node(ip, 1)
+        if ret_val == 0:
+            ips_to_redo.append(ip)
+
+    return ips_to_redo
 
 
 def launch_instances(conn, instance_type, num_insts):
@@ -86,27 +98,28 @@ def aws_spot_launch(conn, bid, instance_type, num_insts):
     1
 
 def euca_spot_launch_mimicry(conn, bid, instance_type, num_insts):
-    reservation = launch_instances(conn, instance_type, num_insts)
-    print 'Secured reservation: ', repr(reservation)
-    instances = get_instances_from_reservation(reservation)
-    print 'Waiting for instances to run.'
-    for instance in instances:
-        while instance.update() != "running":
-            sleep(3)
-    print 'All nodes are running.'
+    euca_instance_types = ['cg1.4xlarge', 'm1.large', 'm2.4xlarge']
+    aws_instance_types = ['c4.xlarge', 'm4.xlarge', 'r4.2xlarge']
+    instance_type = euca_instance_types[aws_instance_types.index(instance_type)]
+    while (1):
+        reservation = launch_instances(conn, instance_type, num_insts)
+        print 'Secured reservation: ', repr(reservation)
+        instances = get_instances_from_reservation(reservation)
+        print 'Waiting for instances to run.'
+        for instance in instances:
+            while instance.update() != "running":
+                sleep(3)
+        print 'All nodes are running.'
 
-    ips = [instance.ip_address for instance in instances]
-    print 'Updating known hosts files.'
-    update_known_hosts(ips)
-    print 'Waiting on SSH for each instance.'
-    wait_ssh(ips)
-
-    temp_dir = temp_file_path + '/reservation' + time_str()
-
-    os.system('mkdir ' + temp_dir)
-    os.system('mkdir ' + temp_dir + '/profile_logs')
-    os.system('mkdir ' + temp_dir + '/computation_log')
-    return reservation, temp_dir, bid
+        ips = [instance.ip_address for instance in instances]
+        print 'Updating known hosts files.'
+        update_known_hosts(ips)
+        print 'Waiting on SSH for each instance.'
+        redo_ips = wait_ssh(ips, reservation)
+        if redo_ips == []:
+            return reservation, bid
+        else:
+            terminate_instances_from_reservation(conn, reservation)
 
 
 

@@ -129,9 +129,11 @@ app.post('/profile_button_submit', function(req, res) {
       var xhttp = new XMLHttpRequest();
       var json_send = JSON.stringify({dataset: datasets[0], profile: req.body});
 
+      console.log('http://0.0.0.0:8080/submit_profile/' + json_send)
       xhttp.open("GET", 'http://0.0.0.0:8080/submit_profile/' + json_send, true);
       xhttp.send();
       xhttp.onload = function() {
+        console.log("GOT RETURN VALUE!")
         console.log(xhttp.responseText)
       }
   }); 
@@ -180,7 +182,6 @@ app.use(function (err, req, res, next) {
   res.status(err.status || 500);
   next(err);
 });
-
 
 
 module.exports = app;

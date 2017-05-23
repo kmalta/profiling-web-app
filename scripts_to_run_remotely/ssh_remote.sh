@@ -1,1 +1,1 @@
-ssh -i cloud_configs/aristotle/aristotle-key.pem ubuntu@$1
+ssh -o connecttimeout=60 -i ~/MLSchedule/cloud_configs/aristotle/aristotle-key.pem ubuntu@$1
