@@ -35,10 +35,16 @@ def schedule_profile(profile):
     request_json = json_loads_byteified(profile)
     profile_json = dict(request_json['dataset'], **request_json['profile'])
     print profile_json
-    reservation, actual_bid_price, save_dir = euca_profile(profile_json)
-    print reservation
+    #reservation, actual_bid_price, save_dir = euca_profile(profile_json)
+
+
+    reservation = 'Reservation:r-28f2fe6d'
+    actual_bid_price = profile_json['bidPerMachine']
+    save_dir = 'profiles/Reservation:r-28f2fe6d'
+
+
     ret_dict = {}
-    ret_dict['reservation'] = reservation
+    ret_dict['reservation'] = repr(reservation)
     ret_dict['save_dir'] = save_dir
     ret_dict['actual_bid_price'] = actual_bid_price
 

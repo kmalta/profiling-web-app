@@ -38,7 +38,7 @@ function createDBTable(data) {
                 input.value = bid
 
                 var input = document.getElementById('profile-input-machines');
-                input.value = 5
+                input.value = 4
 
                 var input = document.getElementById('profile-input-machineType');
                 input.value = db_entry['machine_type']
@@ -91,8 +91,11 @@ function change_profiling_default_amount(num_workers) {
     var input = document.getElementById('profile-input-budget');
     input.value = '$' + roundTo(bid*(parseInt(num_workers) + 1), 3).toString();
 
+    var input = document.getElementById('profile-input-machine-count');
+    input.value = parseInt(num_workers);
+
     var input = document.getElementById('profile-input-machines');
-    input.value = parseInt(num_workers)
+    input.value = parseInt(num_workers);
     elem_visibility('profile-budget-div', 'block');
 };
 
@@ -128,7 +131,7 @@ function populate_db_info_table(db_entry, idx) {
 function populate_dataset_profiles_table(db_entry, idx) {
     var profile_db_entry = JSON.parse(db_entry);
     var values_to_populate = [profile_db_entry['number_of_machines'],
-                              profile_db_entry['bid_per_machine'],
+                              '$' + profile_db_entry['bid_per_machine'].toString(),
                               profile_db_entry['budget'],
                               profile_db_entry['machine_type'],
                               profile_db_entry['_id']

@@ -27,7 +27,7 @@ def wait_on_node(ip, max_time):
 def wait_ssh(ips, reservation):
     ips_to_redo = []
     for ip in ips:
-        wait_on_node(ip, 10)
+        wait_on_node(ip, 20)
     for ip in ips:
         ret_val = wait_on_node(ip, 1)
         if ret_val == 0:

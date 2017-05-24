@@ -46,3 +46,6 @@ profiles/*
 
 #Data configuration flies
 data_configs/*
+
+#synth comm arrays
+synth_comm_array_files/*

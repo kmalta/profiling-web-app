@@ -9,6 +9,15 @@ window.onload = function grabProfileEntryInfo() {
         get_dataset_by_id(xhttp.responseText);
         populate_profile_info_table(xhttp.responseText);
     }
+
+    console.log("Start next query")
+    var xhttp2 = new XMLHttpRequest();
+    xhttp2.open("POST", "/get_profile_results", true);
+    xhttp2.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+    xhttp2.send('data=' + JSON.stringify({profile_id: profile_id}));
+    xhttp2.onload = function() {
+        console.log(xhttp2.responseText);
+    }
 };
 
 
@@ -29,7 +38,7 @@ function get_dataset_by_id(message) {
 function populate_profile_info_table(message) {
 
     data = JSON.parse(message);
-    var values_to_populate = [data['budget'],
+    var values_to_populate = ['$' + data['budget'].toString(),
                               data['machine_type'],
                               data['number_of_machines'],
                               data['number_of_machines'] + 1,

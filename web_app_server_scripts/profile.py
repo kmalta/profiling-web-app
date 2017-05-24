@@ -112,6 +112,8 @@ def aws_profile(json_dict):
     clean_up_experiment(dataset, master_ip, nodes_info)
     clean_up_experiment(dataset + '_comm', master_ip, nodes_info)
 
+    terminate_instances_from_reservation(conn, reservation)
+
 
     #IF COMM PROFILE DOES NOT EXIST
     # if json_dict['needs_comm_profile'] == True:
