@@ -5,18 +5,6 @@ sys.path.insert(0,'./')
 from setup_cloud import *
 
 
-def parse_log(save_dir, log_type):
-    f = open(save_dir + '/profile_logs/' + log_type + '.log', 'r')
-
-    time_array = []
-    for line in f:
-        if ': Job' in line:
-            time_array.append(float(line.split()[-2]))
-
-    return time_array[3:]
-
-
-
 def euca_profile(json_dict):
 
 

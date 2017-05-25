@@ -6,6 +6,7 @@ var profileSchema = new Schema({
     dataset_id: String,
     bid_per_machine: Number,
     actual_bid_per_machine: Number,
+    total_price: Number,
     budget: Number,
     cost: Number,
     number_of_machines: Number,

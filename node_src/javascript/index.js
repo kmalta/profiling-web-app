@@ -90,7 +90,6 @@ app.post('/process_dataset_from_name', function(req, res) {
 
 app.post('/dataset_db_save', function(req, res){
   var dataset_json = JSON.parse(req.body.data);
-  console.log(dataset_json);
   var dataset = new Dataset({
     name: dataset_json['name'],
     s3url: dataset_json['url'],
@@ -101,7 +100,6 @@ app.post('/dataset_db_save', function(req, res){
     machine_type: dataset_json['inst_type'],
     bid: dataset_json['bid']
   });
-  console.log(dataset)
   dataset.save(function(err) {
     if (err) throw err;
     console.log('Dataset saved successfully!');
@@ -154,7 +152,6 @@ app.post('/profile_button_submit', function(req, res) {
       req.body['needSynthProfile'] = synth_profile_need;
       var xhttp = new XMLHttpRequest();
       var json_send = JSON.stringify({dataset: dataset, profile: req.body});
-      console.log('http://0.0.0.0:8080/submit_profile/' + json_send)
       xhttp.open("GET", 'http://0.0.0.0:8080/submit_profile/' + json_send, true);
       xhttp.send();
       xhttp.onload = function() {
@@ -163,10 +160,12 @@ app.post('/profile_button_submit', function(req, res) {
           profile_finished: 1,
           need_synth_profile: 1,
           actual_bid_per_machine: data['actual_bid_price'],
+          total_price: data['total_price'],
           comm_profile: data['comm_time'],
           full_profile: data['comp_time'],
-          reservation_id: data['reservation'].split(':')[1],
-          associated_synth_comm_profile_path: 'synth_' + Math.round(Math.log10(datasets[0].features)).toString()
+          reservation_id: data['reservation'].split(':')[1].split('\'')[0],
+          associated_synth_comm_profile_path: 'synth_' + Math.round(Math.log10(datasets[0].features)).toString() + 
+                                              '_' + req.body.numberOfMachines.toString()
         }
         Profile.update({_id:profile._id}, {$set:update_profile_params}, function(err, result) {
           if (err) throw err;
@@ -204,7 +203,6 @@ app.post('/get_dataset_db_entry', function(req, res) {
 app.post('/get_dataset_profiles_db_entries', function(req, res) {
   var dataset_id = JSON.parse(req.body.data).dataset_id;
   Profile.find({dataset_id: dataset_id}, function (err, profiles) {
-    console.log(profiles)
     res.send(profiles);
   });  
 });
@@ -215,15 +213,21 @@ app.post('/get_profile_results', function(req, res) {
 
   if (ret_val == 0) {
     var refreshId = setInterval(function() {
-      Profile.find({_id: profile_id}, function (err, profile) {
-        if (profile[0].profile_finished == 1) {
-          res.send(profile[0]);
-          clearInterval(refreshId);
+      Profile.find({_id: profile_id}, function (err, profiles) {
+        var profile = profiles[0];
+        if (profile.profile_finished == 1) {
+          var xhttp = new XMLHttpRequest();
+          xhttp.open("GET", "http://0.0.0.0:8080/get_synth_comm/" + JSON.stringify(profile), true);
+          xhttp.send();
+          xhttp.onload = function() {
+            var data = JSON.parse(xhttp.responseText);
+            res.send({profile: profile, predictions: data});
+            clearInterval(refreshId);
+          }
         }
       }); 
     }, 30000);
   }
-
 });
 
 
@@ -243,10 +247,18 @@ app.use(function (err, req, res, next) {
 
 
 function sendProfile(profile_id, res) {
-  Profile.find({_id: profile_id}, function (err, profile) {
-    if (profile[0].profile_finished == 1) {
-      res.send(profile[0]);
-      return 1;
+  Profile.find({_id: profile_id}, function (err, profiles) {
+    var profile = profiles[0];
+    if (profile.profile_finished == 1) {
+      var xhttp = new XMLHttpRequest();
+      console.log(profile);
+      xhttp.open("GET", "http://0.0.0.0:8080/get_synth_comm/" + JSON.stringify(profile), true);
+      xhttp.send();
+      xhttp.onload = function() {
+        var data = JSON.parse(xhttp.responseText);
+        res.send({profile: profile, predictions: data});
+        return 1;
+      }
     }
     else {
       return 0;

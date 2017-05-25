@@ -1,3 +1,4 @@
+
 window.onload = function grabProfileEntryInfo() {
     var url_arr = window.location.href.split('/');
     var profile_id = url_arr[url_arr.length -1];
@@ -10,13 +11,15 @@ window.onload = function grabProfileEntryInfo() {
         populate_profile_info_table(xhttp.responseText);
     }
 
-    console.log("Start next query")
     var xhttp2 = new XMLHttpRequest();
     xhttp2.open("POST", "/get_profile_results", true);
     xhttp2.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
     xhttp2.send('data=' + JSON.stringify({profile_id: profile_id}));
     xhttp2.onload = function() {
-        console.log(xhttp2.responseText);
+        var data = JSON.parse(xhttp2.responseText);
+        update_pricing(data);
+        populate_timeseries(data);
+        populate_prediction_table(data);
     }
 };
 
@@ -51,3 +54,69 @@ function populate_profile_info_table(message) {
     }
     elem_visibility('profile-table', 'table');
 }
+
+
+function update_pricing(message) {
+    var data = message.profile;
+    elem_visibility('actual-price-loader', 'none');
+    var actual_price = document.getElementById('profile-table-row-col-6');
+    actual_price.innerHTML = '$' + data['actual_bid_per_machine'].toString();
+
+    elem_visibility('total-price-loader', 'none');
+    var actual_price = document.getElementById('profile-table-row-col-7');
+    actual_price.innerHTML = '$' + data['total_price'].toString();
+}
+
+
+function createData(arr, offset, value_name) {
+
+    var data = [];
+    for (var i = 0; i < arr.length; i++) {
+        data.push({
+            epoch_num:i+ 1 + offset,
+            [value_name]: arr[i + offset]
+        })
+    }
+    return data;
+
+}
+
+
+function populate_timeseries(message) {
+    var data = message['predictions'];
+
+    var epoch_chart = d3.timeseries()
+              .addSerie(createData(data['comp'], 0, 'real'),
+                {x:'epoch_num',y:'real'},
+                {interpolate:'monotone',color:"#a6cee3",label:"actual"})
+              .addSerie(createData(data['projected'], data.offset, 'predict'),
+                  {x:'epoch_num',y:'predict'},
+                  {interpolate:'monotone',dashed:true,color:"#e26060",label:"prediction"})
+              .width(900)
+
+    epoch_chart("#epoch-chart");
+    elem_visibility('epoch-profile-loader', 'none');
+    elem_visibility('chart-container', 'block');
+}
+
+
+function populate_prediction_table(message) {
+
+    var data = message['predictions'];
+
+    var values_to_populate = [
+                              roundTo(data['overheads'], 4),
+                              roundTo((data['total_communication_time']/3600)*100, 4),
+                              roundTo(data['profiling_time'], 4),
+                              roundTo(data['time_saved']*100, 4),
+                              data['projected_epochs']
+                              ]
+
+    for (i = 1; i < values_to_populate.length + 1; i++) {
+        var elem = document.getElementById('profile-prediction-row-col-' + i.toString());
+        elem.innerHTML = values_to_populate[i - 1];
+    }
+    elem_visibility('profile-prediction-div', 'block')
+    elem_visibility('profile-prediction-table', 'table');
+}
+
