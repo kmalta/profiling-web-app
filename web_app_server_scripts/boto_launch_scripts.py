@@ -1,7 +1,7 @@
 import boto, errno, time
 from boto.ec2.regioninfo import RegionInfo
 from boto.s3.key import Key
-from time import sleep, gmtime, strftime
+from time import sleep, gmtime, strftime, time
 
 from py_command_line_wrappers import *
 

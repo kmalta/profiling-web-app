@@ -6,7 +6,7 @@ function populate_dataset_table(message) {
                               message['samples'],
                               roundTo(parseFloat(message['features'], 3)).toString(),
                               message['machine_type'],
-                              '$' + parseFloat(message['bid']).toString()
+                              message['_id']
                               ]
 
     for (i = 1; i < 8; i++) {
@@ -18,14 +18,13 @@ function populate_dataset_table(message) {
 }
 
 function get_dataset_table_values() {
-    var arr = ['name', 'url', 'size', 'samples', 'features', 'inst_type', 'bid'];
+    var arr = ['name', 'url', 'size', 'samples', 'features', 'inst_type'];
     var dict = {};
-    for (i = 1; i < 8; i++) {
+    for (i = 1; i < 7; i++) {
         var elem = document.getElementById('dataset-table-row-col-' + i.toString());
         dict[arr[i-1]] = elem.innerHTML;
     }
     dict['size_in_bytes'] = unhumanize(dict['size']);
-    dict['bid'] = parseFloat(dict['bid'].split("$")[1]);
     return dict;
 }
 

@@ -102,7 +102,8 @@ def spark_config(nodes_info, working_dir):
 
 
 def start_spark(nodes_info):
-    py_ssh('', nodes_info[0][0], 'spark-2.0.0/sbin/start-all.sh')
+    py_ssh('', nodes_info[0][0], 'spark-2.0.0/sbin/start-master.sh')
+    py_ssh('', nodes_info[0][0], 'spark-2.0.0/sbin/start-slaves.sh')
 
 def stop_spark(nodes_info):
     py_ssh('', nodes_info[0][0], 'spark-2.0.0/sbin/stop-slaves.sh')
@@ -112,7 +113,7 @@ def scala_send_spark_job(nodes_info, jar_path):
     for node in nodes_info:
         py_scp_to_remote('', node[0], jar_path, 'jars/' + jar_path.split('/')[-1])
 
-def euca_scala_run_spark_job(nodes_info, worker_type, master_port, file_name, hadoop_master_port, jar, num_features, iterations, log_path):
+def euca_scala_run_spark_job(nodes_info, worker_type, master_port, file_name, hadoop_master_port, jar, num_features, iterations, log_path, synth):
 
     euca_instance_types = ['cg1.4xlarge', 'm1.large', 'm2.4xlarge']
     aws_instance_types = ['c4.xlarge', 'm4.xlarge', 'r4.2xlarge']
@@ -179,7 +180,37 @@ def euca_scala_run_spark_job(nodes_info, worker_type, master_port, file_name, ha
 
     print log_path
     print "@@@@@@@@@@@@@@@" + run_str[0]
-    py_ssh_to_log('', nodes_info[0][0], run_str[0], log_path)
+    py_ssh_to_log('', nodes_info[0][0], run_str[0], log_path, False)
+    start_time = time()
+
+
+    time_out_check_path = log_path.split('profile_logs')[0] + 'time_out_check'
+    finished_flag = 0
+    if synth == False:
+        finished_flag = 0
+        while(time() < 600 + start_time):
+            os.system('rm ' + time_out_check_path)
+            py_ssh_to_log('', nodes_info[0][0], 'jps', time_out_check_path, True)
+            f = open(time_out_check_path, 'r')
+            output = f.read()
+            f.close()
+            if 'SparkSubmit' not in output:
+                finished_flag = 1
+                break
+            sleep(5)
+    else:
+        sleep(3600)
+
+    if finished_flag == 0:
+        os.system('rm ' + time_out_check_path)
+        py_ssh_to_log('', nodes_info[0][0], 'jps', time_out_check_path, True)
+        f = open(time_out_check_path, 'r')
+        for line in f:
+            if 'SparkSubmit' in line:
+                pid = line.split()[0]
+                py_ssh('', nodes_info[0][0], 'kill ' + pid)
+        f.close()
+
 
 
 def aws_scala_run_spark_job(nodes_info, worker_type, master_port, file_name, hadoop_master_port, jar, num_features, iterations, log_path):
@@ -238,7 +269,10 @@ def aws_scala_run_spark_job(nodes_info, worker_type, master_port, file_name, had
 
     print log_path
     print "@@@@@@@@@@@@@@@" + run_str[0]
-    py_ssh_to_log('', nodes_info[0][0], run_str[0], log_path)
+    
+    proc = py_ssh_to_log('', nodes_info[0][0], run_str[0], log_path)
+
+
 
 
 
@@ -335,7 +369,7 @@ def get_dataset(s3url, master_ip, working_dir):
 
     flag = 0
     while(1):
-        py_ssh_to_log('', master_ip, 'sudo chown ubuntu:ubuntu /mnt; ' +  get_data, working_dir + '/s3_log')
+        py_ssh_to_log('', master_ip, 'sudo chown ubuntu:ubuntu /mnt; ' +  get_data, working_dir + '/s3_log', True)
         sleep(3)
         f = open(working_dir + '/s3_log', 'r')
         if '403' not in f.read():
@@ -349,9 +383,11 @@ def get_dataset(s3url, master_ip, working_dir):
 
 
 
-def configure_machines_for_spark_job_experiments(s3url, profile_dir, replication, instance_ips):
+def configure_machines_for_spark_job_experiments(s3url, profile_dir, replication, instance_ips, test):
 
     dataset = s3url.split('/')[-1]
+
+
     log_dir = profile_dir + '/profile_logs'
 
     master_ip = instance_ips[0]
@@ -361,6 +397,9 @@ def configure_machines_for_spark_job_experiments(s3url, profile_dir, replication
 
     ips = instance_ips[1:]
     nodes_info = get_all_hosts(master_ip, ips, profile_dir)
+    if test == True:
+        return dataset, nodes_info
+
     os.system('cp config_file_templates/hosts_file_end ' + profile_dir + '/')
 
 
@@ -383,8 +422,8 @@ def configure_machines_for_spark_job_experiments(s3url, profile_dir, replication
     configure_nodes(nodes_info, profile_dir)
     spark_config(nodes_info, profile_dir)
     py_ssh('', master_ip, 'source scripts/restart_hadoop.sh')
-    start_spark(nodes_info)
 
+    start_spark(nodes_info)
 
     return dataset, nodes_info
 
@@ -394,15 +433,18 @@ def create_hdfs_files(dataset, master_ip, comm_samples):
     py_ssh('', master_ip, 'head -n ' + str(comm_samples) + ' /mnt/' + dataset + ' > /mnt/' + dataset + '_comm; /usr/local/hadoop/bin/hdfs dfs -put /mnt/' + dataset + '_comm /; /usr/local/hadoop/bin/hdfs dfs -ls /')
     py_ssh('', master_ip, '/usr/local/hadoop/bin/hdfs dfs -put /mnt/' + dataset + ' /; /usr/local/hadoop/bin/hdfs dfs -ls /')
 
+def create_synth_hdfs_file(features, master_ip, comm_samples):
+    dataset = 'synth_' + str(features)
+    py_scp_to_remote('', master_ip, 'synth_datasets/' + dataset, '/mnt')
+    py_ssh('', master_ip, 'head -n ' + str(comm_samples) + ' /mnt/' + dataset + ' > /mnt/' + dataset + '_temp; /usr/local/hadoop/bin/hdfs dfs -put /mnt/' + dataset + '_temp /' + dataset + '; /usr/local/hadoop/bin/hdfs dfs -ls /')
+
 def clean_up_experiment(dataset, master_ip, nodes_info):
-    stop_spark(nodes_info)
     py_ssh('', master_ip, '/usr/local/hadoop/bin/hdfs dfs -rm /' + dataset + '; /usr/local/hadoop/bin/hdfs dfs -ls /')
 
-
-def euca_run_spark_experiment(dataset, nodes_info, worker_type, jar_path, num_features, iterations, log_path):
+def euca_run_spark_experiment(dataset, nodes_info, worker_type, jar_path, num_features, iterations, log_path, synth):
     scala_send_spark_job(nodes_info, jar_path)
     jar = jar_path.split('/')[-1]
-    euca_scala_run_spark_job(nodes_info, worker_type, 7077, dataset, 9000, jar, num_features, iterations, log_path)
+    euca_scala_run_spark_job(nodes_info, worker_type, 7077, dataset, 9000, jar, num_features, iterations, log_path, synth)
 
 def aws_run_spark_experiment(dataset, nodes_info, worker_type, jar_path, num_features, iterations, log_path):
     scala_send_spark_job(nodes_info, jar_path)

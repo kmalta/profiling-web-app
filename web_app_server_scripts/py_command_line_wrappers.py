@@ -34,14 +34,16 @@ def py_ssh(additional_options, ip, post_command):
     proc.wait()
     return proc
 
-def py_ssh_to_log(additional_options, ip, post_command, log_path):
+def py_ssh_to_log(additional_options, ip, post_command, log_path, wait):
     pc = post_command
     ao = additional_options
     log = open(log_path, 'a')
 
     cmd = 'ssh ' + ao + ' ' + options + '  ' + user + '@' + ip + ' "' + pc + '"'
     proc = Popen(cmd, stdout=log, stderr=log, shell=True, executable='/bin/bash')
-    proc.wait()
+    #WE REMOVED THE WAIT TO CREATE TIMEOUT
+    if wait == True:
+        proc.wait()
     return proc
 
 def py_wait_proc(process_str):

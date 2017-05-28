@@ -99,3 +99,7 @@ table tr:hover td {
 from(#f2f2f2), to(#f0f0f0));
     background: -moz-linear-gradient(top,  #f2f2f2,  #f0f0f0);  
 }
+
+table {
+    width: 80%;
+}

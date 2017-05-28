@@ -1,6 +1,11 @@
 import ast
 import numpy as np
+from time import sleep, gmtime, strftime
 from dateutil import parser
+
+
+def time_str():
+    return strftime("-%Y-%m-%d-%H-%M-%S", gmtime())
 
 def parse_log(save_dir, log_type):
     f = open(save_dir + '/profile_logs/' + log_type + '.log', 'r')
@@ -8,9 +13,18 @@ def parse_log(save_dir, log_type):
     time_array = []
     for line in f:
         if ': Job' in line:
-            time_array.append(float(line.split()[-2]))
+            try:
+                time_array.append(float(line.split()[-2]))
+            except:
+                1
 
     return time_array[3:]
+
+def safe_split(line):
+    left = line.split('INFO')[0]
+    time_arr = left.split()[-2:]
+    time_arr[0] = time_arr[0][-8:]
+    return ' '.join(time_arr)
 
 
 def get_total_log_time(save_dir, log_type):
@@ -22,7 +36,7 @@ def get_total_log_time(save_dir, log_type):
         if 'Running Spark version 2.0.0' in line:
             first_time_str = ' '.join(line.split()[:2])
         if 'Deleting directory /mnt/spark/' in line:
-            last_time_str = ' '.join(line.split()[:2])
+            last_time_str = safe_split(line)
 
 
     first_time = parser.parse(first_time_str)
@@ -30,7 +44,22 @@ def get_total_log_time(save_dir, log_type):
     seconds = (last_time - first_time).total_seconds()
     return seconds
 
+def smooth_synth_close(synth_close):
+    for i, elem in enumerate(synth_close):
+        if elem <= 0:
+            synth_close[i] = synth_close[i - 1]
+            elem = synth_close[i - 1]
+        elif i > 100 and elem > 5*synth_close[i-1]:
+            synth_close[i] = np.median(synth_close[i - 10: i - 1])
+
+    return synth_close
+
+
 def compute_projection(real_comm, real_full, synth_close):
+
+
+    synth_close = smooth_synth_close(synth_close)
+
 
     epochs_profiled = len(real_comm)
     epoch_window = min(10, epochs_profiled - 3)
@@ -47,15 +76,15 @@ def compute_projection(real_comm, real_full, synth_close):
 
     projection_time = sum(real_comm) + sum(real_full)
 
-
     accum = 0
     for i, elem in enumerate(projected):
-        if elem > 5*projected[i-1]:
-            elem = projected[i-1]
-            projected[i] = projected[i-1]
-        accum += elem
+        if i > 100 and elem > 5*projected[i-1]:
+            projected[i] = np.median(synth_close[i - 10: i - 1])
+        accum += projected[i]
         if accum > 3600:
             return epochs_profiled, projected[:i + 1]
+
+    return epochs_profiled, projected
 
 
 
@@ -77,7 +106,7 @@ def compute_profile_predictions(profile_json):
     offset, projected_values = compute_projection(real_comm, real_full, synth_profile)
 
     ret_dict = {}
-    ret_dict['overheads'] = comp_overheads
+    ret_dict['algorithmic_overheads'] = comp_overheads
     ret_dict['comp'] = real_full
     ret_dict['projected'] = projected_values
     ret_dict['offset'] = offset

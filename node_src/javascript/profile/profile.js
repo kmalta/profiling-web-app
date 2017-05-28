@@ -1,7 +1,6 @@
-
 window.onload = function grabProfileEntryInfo() {
     var url_arr = window.location.href.split('/');
-    var profile_id = url_arr[url_arr.length -1];
+    var profile_id = url_arr[url_arr.length -1].split('-')[0];
     var xhttp = new XMLHttpRequest();
     xhttp.open("POST", "/get_profile_db_entry", true);
     xhttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
@@ -25,11 +24,11 @@ window.onload = function grabProfileEntryInfo() {
 
 
 function get_dataset_by_id(message) {
-    var data = JSON.parse(message);
+    var profile = JSON.parse(message)['profile'];
     var xhttp = new XMLHttpRequest();
     xhttp.open("POST", "/get_dataset_db_entry", true);
     xhttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-    xhttp.send('data=' + JSON.stringify({dataset_id: data['dataset_id']}));
+    xhttp.send('data=' + JSON.stringify({dataset_id: profile['dataset_id']}));
     xhttp.onload = function() {
         elem_visibility('dataset-info-header', 'block');
         populate_dataset_table(JSON.parse(xhttp.responseText));
@@ -39,13 +38,13 @@ function get_dataset_by_id(message) {
 
 
 function populate_profile_info_table(message) {
-
-    data = JSON.parse(message);
-    var values_to_populate = ['$' + data['budget'].toString(),
-                              data['machine_type'],
-                              data['number_of_machines'],
-                              data['number_of_machines'] + 1,
-                              '$' + parseFloat(data['bid_per_machine']).toString()
+    var data = JSON.parse(message);
+    var profile = data['profile'];
+    var values_to_populate = ['$' + profile['budget'].toString(),
+                              profile['machine_type'],
+                              profile['number_of_machines'],
+                              profile['number_of_machines'] + 1,
+                              '$' + parseFloat(data['bid_return']['bid']).toString()
                               ]
 
     for (i = 1; i < values_to_populate.length + 1; i++) {
@@ -69,11 +68,10 @@ function update_pricing(message) {
 
 
 function createData(arr, offset, value_name) {
-
     var data = [];
     for (var i = 0; i < arr.length; i++) {
         data.push({
-            epoch_num:i+ 1 + offset,
+            epoch_num: i + 1 + offset,
             [value_name]: arr[i + offset]
         })
     }
@@ -89,7 +87,7 @@ function populate_timeseries(message) {
               .addSerie(createData(data['comp'], 0, 'real'),
                 {x:'epoch_num',y:'real'},
                 {interpolate:'monotone',color:"#a6cee3",label:"actual"})
-              .addSerie(createData(data['projected'], data.offset, 'predict'),
+              .addSerie(createData(data['projected'], data.offset - 1, 'predict'),
                   {x:'epoch_num',y:'predict'},
                   {interpolate:'monotone',dashed:true,color:"#e26060",label:"prediction"})
               .width(900)
@@ -97,18 +95,28 @@ function populate_timeseries(message) {
     epoch_chart("#epoch-chart");
     elem_visibility('epoch-profile-loader', 'none');
     elem_visibility('chart-container', 'block');
+
+    fix_ticks('series-x-axis');
+    fix_ticks('slide-x-axis');
 }
 
 
+function fix_ticks(id) {
+    var elem = document.getElementById(id);
+    var child = elem.children[elem.children.length - 2].children[1];
+    child.style = "text-anchor: end";
+}
+
 function populate_prediction_table(message) {
 
+    var profile = message['profile']
     var data = message['predictions'];
 
     var values_to_populate = [
-                              roundTo(data['overheads'], 4),
+                              roundTo(profile['spin_up_time'], 4),
                               roundTo((data['total_communication_time']/3600)*100, 4),
                               roundTo(data['profiling_time'], 4),
-                              roundTo(data['time_saved']*100, 4),
+                              roundTo((1 - data['time_saved'])*100, 4),
                               data['projected_epochs']
                               ]
 

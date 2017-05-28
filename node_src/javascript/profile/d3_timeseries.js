@@ -50,7 +50,7 @@ function(d3,d3tip)
                                     '<td style="color:#333333;text-align:right">'+yscale.setformat(d.item[d.aes.y])+'</td></tr>'
                     }).join('')+'</table>'
 
-                return '<h4>Epoch Number: '+parseInt(xscale.setformat(epoch_num))+'</h4>'+spans
+                return '<h4>Epoch Number: '+parseInt(epoch_num)+'</h4>'+spans
             }
 
 
@@ -220,7 +220,7 @@ function(d3,d3tip)
         }
 
         function updateTip(xepoch){
-            if(xepoch==null){
+            if(xepoch==null || xepoch < 1){
                 tooltipDiv.style('opacity',0)
             }else{
                 var s=series.map(function(s,i){
@@ -379,11 +379,13 @@ function(d3,d3tip)
 
             svg.append('g')
                         .attr('class','d3_timeseries focus x axis')
+                        .attr('id','series-x-axis')
                         .attr("transform", "translate("+margin.left+","+ (height-margin.bottom-drawerHeight - drawerTopMargin) +")")
                         .call(xAxis);
 
             drawerContainer.append('g')
                         .attr('class','d3_timeseries x axis')
+                        .attr('id','slide-x-axis')
                         .attr("transform", "translate(0,"+ (drawerHeight) +")")
                         .call(xAxis);
 

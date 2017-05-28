@@ -49,3 +49,6 @@ data_configs/*
 
 #synth comm arrays
 synth_comm_array_files/*
+
+#output logs
+output_logs/*

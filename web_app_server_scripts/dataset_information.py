@@ -35,11 +35,8 @@ def get_data_stats(cfg_file):
         inst_type = inst_types[2]
 
 
-    ret_val = get_bid(inst_type, regions, 1)
-
     dataset_dict['machine_type'] = inst_type
-    dataset_dict['bid'] = ret_val['bid']
+
 
     return dataset_dict
-
 
