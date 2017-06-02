@@ -4,7 +4,7 @@
 		module="log-reg-explicit-parallelism_2.11"
 		revision="1.0"
 		status="integration"
-		publication="20161103130139"
+		publication="20170531211633"
 	>
 		<description>
 		Log Reg Explicit Parallelism

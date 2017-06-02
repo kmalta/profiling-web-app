@@ -3,7 +3,6 @@ window.onload = grabDBEntryInfo();
 function grabDBEntryInfo() {
     var xhttp = new XMLHttpRequest();
     xhttp.open("GET", "/get_dataset_db_entries", true);
-    xhttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
     xhttp.send();
     xhttp.onload = function() {
         createDBTable(JSON.parse(xhttp.responseText));
@@ -29,8 +28,8 @@ function createDBTable(data) {
 
                 var xhttp = new XMLHttpRequest();
                 xhttp.open("POST", "/get_bid", true);
-                xhttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-                xhttp.send('data=' + JSON.stringify({dataset_id: db_entry._id, number_of_machines:4}));
+                xhttp.setRequestHeader("Content-Type", "application/json");
+                xhttp.send(JSON.stringify({dataset_id: db_entry._id, number_of_machines:4}));
                 xhttp.onload = function() {
                     var bid = JSON.parse(xhttp.responseText)['bid'];
                     populateHiddenValues(bid, db_entry);
@@ -64,8 +63,8 @@ function populateHiddenValues(bid, db_entry) {
 function grabDatasetProfileEntryInfo(dataset_id) {
     var xhttp = new XMLHttpRequest();
     xhttp.open("POST", "/get_dataset_profiles_db_entries", true);
-    xhttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-    xhttp.send('data=' + JSON.stringify({dataset_id: dataset_id}));
+    xhttp.setRequestHeader("Content-Type", "application/json");
+    xhttp.send(JSON.stringify({dataset_id: dataset_id}));
     xhttp.onload = function() {
         createDatasetProfileTable(JSON.parse(xhttp.responseText));
     }
@@ -100,7 +99,11 @@ function createDatasetProfileTable(data) {
 
         var row = document.getElementById('dataset-profiles-table-row-' + i.toString());
         row.onclick = (function(db_entry){
-            return function(){ window.location.replace('/profile/' + db_entry['_id'] + '-' + db_entry['reservation_id']) }
+            if (db_entry['reservation_id'] === undefined) {
+                return function(){ window.location.replace('/profile/' + db_entry['_id']) }
+            } else {
+                return function(){ window.location.replace('/profile/' + db_entry['_id'] + '-' + db_entry['reservation_id']) }
+            }
         })(data[i]);
 
     }
@@ -113,12 +116,12 @@ function createDatasetProfileTable(data) {
 function change_profiling_default_amount(num_workers) {
 
     var input = document.getElementById('dataset-table-row-col-7');
-    var dataset_id = input.innerHTML;
+    var dataset_iden = input.innerHTML;
 
     var xhttp = new XMLHttpRequest();
     xhttp.open("POST", "/get_bid", true);
-    xhttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-    xhttp.send('data=' + JSON.stringify({dataset_id: dataset_id, number_of_machines:num_workers}));
+    xhttp.setRequestHeader("Content-Type", "application/json");
+    xhttp.send(JSON.stringify({dataset_id: dataset_iden, number_of_machines:num_workers}));
     xhttp.onload = function() {
         var bid = JSON.parse(xhttp.responseText)['bid'];
         var input = document.getElementById('profile-input-budget');

@@ -8,9 +8,6 @@
 */db/*
 db/*
 
-#CONFIG SCRIPTS
-*cloud_configs*
-
 #HOSTFILES
 *host*
 
@@ -20,26 +17,10 @@ db/*
 #Python .pyc Files
 *.pyc
 
-#Cache Files
-*check_sum*
 
 #Scripts tar ball
 *.tar*
 
-#Data Chunks
-temp_data_chunks/*
-
-#Experiment Data
-experiment_data/*
-
-#Staleness Data
-staleness_data/*
-
-#Dump File for Debugging
-dump_file
-
-#File for s3 Error Checking
-s3error_check
 
 #Profiles
 profiles/*
@@ -52,3 +33,8 @@ synth_comm_array_files/*
 
 #output logs
 output_logs/*
+
+#cloud configuration files
+*cloud_configs/aristotle
+*cloud_configs/aws
+*cloud_configs/which_cloud.py

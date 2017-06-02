@@ -1,21 +1,9 @@
-window.onload = function grabProfileEntryInfo() {
-    var url_arr = window.location.href.split('/');
-    var profile_id = url_arr[url_arr.length -1].split('-')[0];
-    var xhttp = new XMLHttpRequest();
-    xhttp.open("POST", "/get_profile_db_entry", true);
-    xhttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-    xhttp.send('data=' + JSON.stringify({profile_id: profile_id}));
-    xhttp.onload = function() {
-        get_dataset_by_id(xhttp.responseText);
-        populate_profile_info_table(xhttp.responseText);
-    }
+const ws = new WebSocket('ws://localhost:5000');
 
-    var xhttp2 = new XMLHttpRequest();
-    xhttp2.open("POST", "/get_profile_results", true);
-    xhttp2.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-    xhttp2.send('data=' + JSON.stringify({profile_id: profile_id}));
-    xhttp2.onload = function() {
-        var data = JSON.parse(xhttp2.responseText);
+
+ws.onmessage = function incoming(event) {
+    var data = JSON.parse(event.data);
+    if (data['message'] == 'return profile data') {
         update_pricing(data);
         populate_timeseries(data);
         populate_prediction_table(data);
@@ -23,17 +11,46 @@ window.onload = function grabProfileEntryInfo() {
 };
 
 
+window.onload = function grabProfileEntryInfo() {
+    ws.onopen = function open() {
+        ws.send(JSON.stringify({message: 'hello', client: 'profile'}));
+    };
+    var url_arr = window.location.href.split('/');
+    var profile_id = url_arr[url_arr.length -1].split('-')[0];
+    var xhttp = new XMLHttpRequest();
+    xhttp.open("POST", "/get_profile_db_entry", true);
+    xhttp.setRequestHeader("Content-Type", "application/json");
+    xhttp.send(JSON.stringify({profile_id: profile_id}));
+    xhttp.onload = function() {
+        get_dataset_by_id(xhttp.responseText);
+        populate_profile_info_table(xhttp.responseText);
+    }
+
+    ping_profile_results(profile_id);
+};
+
+
+
+
+function ping_profile_results(profile_id) {
+    var xhttp = new XMLHttpRequest();
+    xhttp.open("PUT", "/get_profile_results", true);
+    xhttp.setRequestHeader("Content-Type", "application/json");
+    xhttp.send(JSON.stringify({profile_id: profile_id}));
+};
+
+
 function get_dataset_by_id(message) {
     var profile = JSON.parse(message)['profile'];
     var xhttp = new XMLHttpRequest();
     xhttp.open("POST", "/get_dataset_db_entry", true);
-    xhttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-    xhttp.send('data=' + JSON.stringify({dataset_id: profile['dataset_id']}));
+    xhttp.setRequestHeader("Content-Type", "application/json");
+    xhttp.send(JSON.stringify({dataset_id: profile['dataset_id']}));
     xhttp.onload = function() {
         elem_visibility('dataset-info-header', 'block');
         populate_dataset_table(JSON.parse(xhttp.responseText));
     }
-}
+};
 
 
 
@@ -52,7 +69,7 @@ function populate_profile_info_table(message) {
         elem.innerHTML = values_to_populate[i - 1];
     }
     elem_visibility('profile-table', 'table');
-}
+};
 
 
 function update_pricing(message) {
@@ -64,7 +81,7 @@ function update_pricing(message) {
     elem_visibility('total-price-loader', 'none');
     var actual_price = document.getElementById('profile-table-row-col-7');
     actual_price.innerHTML = '$' + data['total_price'].toString();
-}
+};
 
 
 function createData(arr, offset, value_name) {
@@ -77,7 +94,7 @@ function createData(arr, offset, value_name) {
     }
     return data;
 
-}
+};
 
 
 function populate_timeseries(message) {
@@ -98,14 +115,14 @@ function populate_timeseries(message) {
 
     fix_ticks('series-x-axis');
     fix_ticks('slide-x-axis');
-}
+};
 
 
 function fix_ticks(id) {
     var elem = document.getElementById(id);
     var child = elem.children[elem.children.length - 2].children[1];
     child.style = "text-anchor: end";
-}
+};
 
 function populate_prediction_table(message) {
 
@@ -126,5 +143,5 @@ function populate_prediction_table(message) {
     }
     elem_visibility('profile-prediction-div', 'block')
     elem_visibility('profile-prediction-table', 'table');
-}
+};
 

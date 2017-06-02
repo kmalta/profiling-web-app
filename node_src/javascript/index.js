@@ -4,6 +4,8 @@ var bodyParser = require('body-parser');
 var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 var app = express();
 
+
+
 var mongoose = require('mongoose');
 mongoUrl = 'mongodb://localhost:27017/mlwebapp';
 mongoose.connect(mongoUrl);
@@ -13,6 +15,7 @@ var db = mongoose.connection;
 app.set('port', (process.env.PORT || '3000'));
 app.set('views', path.resolve('node_src/views'));
 app.set('view engine', 'ejs');
+
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -42,9 +45,33 @@ db.on('error', console.error.bind(console, 'connection error:'));
 
 
 
+//WEBSOCKETS
+const WebSocket = require('ws');
+const wss = new WebSocket.Server({ server });
+profile_ws = null;
+var wsTimeOutVar;
+
+
+wss.on('connection', function(_ws) {
+  _ws.on('message', function incoming(data) {
+
+    message = JSON.parse(data);
+
+    if (message['message'] == 'hello') {
+      if (message['client'] == 'profile') {
+        profile_ws = _ws;
+        console.log('Hello Profile Client JS :)')
+      }
+
+    }
+  });
+});
+
+
 
 
 //GETS
+
 app.get('/', function (req, res) {
   res.render(path.resolve('node_src/views/datasets_display/datasets_display.ejs'));
 });
@@ -69,7 +96,6 @@ app.get('/back_button', function (req, res) {
   res.render(path.resolve('node_src/views/datasets_display/datasets_display.ejs'));
 });
 
-
 app.get('/get_dataset_db_entries', function(req, res) {
   Dataset.find({}, function (err, datasets) {
     res.send(datasets);
@@ -81,36 +107,73 @@ app.get('/get_dataset_db_entries', function(req, res) {
 
 
 
+//POSTS
+
 
 
 app.post('/process_dataset_from_name', function(req, res) {
   var xhttp = new XMLHttpRequest();
-  xhttp.open("GET", "http://0.0.0.0:8080/process_dataset/" + JSON.parse(req.body.data).dataset, true);
+  xhttp.open("GET", "http://0.0.0.0:8080/process_dataset/" + req.body.dataset, true);
   xhttp.send();
   xhttp.onload = function() {
     res.send(xhttp.responseText)
   }
 });
 
+app.post('/get_profile_db_entry', function(req, res) {
+  Profile.find({_id: req.body.profile_id}, function (err, profiles) {
+    Dataset.find({_id: profiles[0].dataset_id}, function (err, datasets) {
+      var xhttp = new XMLHttpRequest();
+      xhttp.open("GET", 'http://0.0.0.0:8080/get_bid_price/' + JSON.stringify({data: datasets[0], numberOfMachines: profiles[0].number_of_machines}), true);
+      xhttp.send();
+      xhttp.onload = function() {
+        var data = JSON.parse(xhttp.responseText);
+        res.send(JSON.stringify({profile: profiles[0], bid_return: data}));
+      }
+    });
+  });
+});
 
+app.post('/get_bid', function(req, res) {
+  Dataset.find({_id: req.body.dataset_id}, function (err, datasets) {
+    var xhttp = new XMLHttpRequest();
+    xhttp.open("GET", 'http://0.0.0.0:8080/get_bid_price/' + JSON.stringify({data: datasets[0], numberOfMachines: req.body.number_of_machines}), true);
+    xhttp.send();
+    xhttp.onload = function() {
+      var data = JSON.parse(xhttp.responseText);
+      res.send(JSON.stringify({bid:data['bid'], index:req.body.index}));
+    }
+  });  
+});
+
+app.post('/get_dataset_db_entry', function(req, res) {
+  Dataset.find({_id: req.body.dataset_id}, function (err, datasets) {
+    res.send(datasets[0]);
+  });
+});
+
+app.post('/get_dataset_profiles_db_entries', function(req, res) {
+  Profile.find({dataset_id: req.body.dataset_id}, function (err, profiles) {
+    res.send(profiles);
+  });  
+});
 
 app.post('/dataset_db_save', function(req, res){
-  var dataset_json = JSON.parse(req.body.data);
   var dataset = new Dataset({
-    name: dataset_json['name'],
-    s3url: dataset_json['url'],
-    size_in_bytes: dataset_json['size_in_bytes'],
-    size: dataset_json['size'],
-    samples: dataset_json['samples'],
-    features: dataset_json['features'],
-    machine_type: dataset_json['inst_type']
+    name: req.body.name,
+    s3url: req.body.url,
+    size_in_bytes: req.body.size_in_bytes,
+    size: req.body.size,
+    samples: req.body.samples,
+    features: req.body.features,
+    machine_type: req.body.inst_type
   });
   dataset.save(function(err) {
     if (err) throw err;
     console.log('Dataset saved successfully!');
   });
 
-  var log_feats = Math.round(Math.log10(dataset_json['features']));
+  var log_feats = Math.round(Math.log10(req.body.features));
 
   if (log_feats == 0) {
     log_feats = 1;
@@ -132,7 +195,7 @@ app.post('/dataset_db_save', function(req, res){
 app.post('/profile_button_submit', function(req, res) {
   var date = new Date();
 
-  Dataset.find({_id: req.body.datasetID}, function (err, datasets) {
+  Dataset.find({_id: req.body.datasetId}, function (err, datasets) {
     var dataset = datasets[0];
     var log_feats = Math.round(Math.log10(dataset['features']));
 
@@ -151,7 +214,7 @@ app.post('/profile_button_submit', function(req, res) {
 
       var profile = new Profile({
         time_submitted: date,
-        dataset_id: req.body.datasetID,
+        dataset_id: req.body.datasetId,
         bid_per_machine: parseFloat(req.body.bidPerMachine),
         budget: parseFloat(req.body.budget.split("$")[1]),
         number_of_machines: parseInt(req.body.numberOfMachines),
@@ -162,120 +225,39 @@ app.post('/profile_button_submit', function(req, res) {
       profile.save(function(err) {
         if (err) throw err;
         console.log('Profile saved successfully!');
+        req.body.needSynthProfile = synth_profile_need;
+        var xhttp = new XMLHttpRequest();
+        var json_send = JSON.stringify({dataset: dataset, profile: req.body});
+        xhttp.open("GET", 'http://0.0.0.0:8080/submit_profile/' + json_send, true);
+        xhttp.send();
+        xhttp.onload = function() {
+          data = JSON.parse(xhttp.responseText);
+          updateProfile(data, profile._id, dataset, req.body, synth_profile);
+        }
+        res.redirect('/profile/' + profile._id);
       });
 
-      req.body['needSynthProfile'] = synth_profile_need;
-      var xhttp = new XMLHttpRequest();
-      var json_send = JSON.stringify({dataset: dataset, profile: req.body});
-      xhttp.open("GET", 'http://0.0.0.0:8080/submit_profile/' + json_send, true);
-      xhttp.send();
-      xhttp.onload = function() {
-        var data = JSON.parse(xhttp.responseText);
-        var update_profile_params = {
-          profile_finished: 1,
-          need_synth_profile: 1,
-          spin_up_time: data['spin_up_time'],
-          actual_bid_per_machine: data['actual_bid_price'],
-          total_price: data['total_price'],
-          comm_profile: data['comm_time'],
-          full_profile: data['comp_time'],
-          reservation_id: data['reservation'].split(':')[1].split('\'')[0],
-          associated_synth_comm_profile_path: 'synth_' + Math.round(Math.log10(datasets[0].features)).toString() + 
-                                              '_' + req.body.numberOfMachines.toString()
-        }
-        Profile.update({_id:profile._id}, {$set:update_profile_params}, function(err, result) {
-          if (err) throw err;
-        });
-        if (synth_profile.machine_counts[parseInt(req.body.numberOfMachines) - 1] == 0) {
-          var new_machine_counts = synth_profile.machine_counts;
-          new_machine_counts[parseInt(req.body.numberOfMachines) - 1] = 1;
-          SynthProfile.update({log_features: log_feats}, {$set:{machine_counts:new_machine_counts}}, function(err, result) {
-            if (err) throw err;
-          });
-        }
-      }
-      res.redirect('/profile/' + profile._id);
     });
   }); 
 });
 
 
 
-app.post('/get_profile_db_entry', function(req, res) {
-  var profile_id = JSON.parse(req.body.data).profile_id;
-  Profile.find({_id: profile_id}, function (err, profiles) {
-    var profile = profiles[0];
 
-    Dataset.find({_id: profile.dataset_id}, function (err, datasets) {
-      var dataset = datasets[0];
-      var xhttp = new XMLHttpRequest();
-      xhttp.open("GET", 'http://0.0.0.0:8080/get_bid_price/' + JSON.stringify({data: dataset, numberOfMachines: profile['number_of_machines']}), true);
-      xhttp.send();
-      xhttp.onload = function() {
-        var data = JSON.parse(xhttp.responseText);
-        res.send(JSON.stringify({profile: profile, bid_return: data}));
-      }
-    });
-  });
-});
 
-app.post('/get_bid', function(req, res) {
-  var input = JSON.parse(req.body.data)
-  var dataset_id = input.dataset_id;
-  var number_of_machines = input.number_of_machines;
-  Dataset.find({_id: dataset_id}, function (err, datasets) {
-    var dataset = datasets[0];
-    var xhttp = new XMLHttpRequest();
-    xhttp.open("GET", 'http://0.0.0.0:8080/get_bid_price/' + JSON.stringify({data: dataset, numberOfMachines: number_of_machines}), true);
-    xhttp.send();
-    xhttp.onload = function() {
-      var data = JSON.parse(xhttp.responseText);
-      res.send(JSON.stringify({bid:data['bid'], index:input.index}));
-    }
-  });  
-});
 
-app.post('/get_dataset_db_entry', function(req, res) {
-  var input = JSON.parse(req.body.data)
-  var dataset_id = input.dataset_id;
-  var number_of_machines = input.number_of_machines;
-  Dataset.find({_id: dataset_id}, function (err, datasets) {
-    res.send(datasets[0]);
-  });
+//PUTS
+
+app.put('/get_profile_results', function(req, res) {
+  getProfileFromId(req.body.profile_id);
 });
 
 
-app.post('/get_dataset_profiles_db_entries', function(req, res) {
-  var dataset_id = JSON.parse(req.body.data).dataset_id;
-  Profile.find({dataset_id: dataset_id}, function (err, profiles) {
-    res.send(profiles);
-  });  
-});
-
-app.post('/get_profile_results', function(req, res) {
-  var profile_id = JSON.parse(req.body.data).profile_id;
-  var ret_val = sendProfile(profile_id, res);
-
-  if (ret_val == 0) {
-    var refreshId = setInterval(function() {
-      Profile.find({_id: profile_id}, function (err, profiles) {
-        var profile = profiles[0];
-        if (profile.profile_finished == 1) {
-          var xhttp = new XMLHttpRequest();
-          xhttp.open("GET", "http://0.0.0.0:8080/get_synth_comm/" + JSON.stringify(profile), true);
-          xhttp.send();
-          xhttp.onload = function() {
-            var data = JSON.parse(xhttp.responseText);
-            res.send({profile: profile, predictions: data});
-            clearInterval(refreshId);
-          }
-        }
-      }); 
-    }, 30000);
-  }
-});
 
 
+
+
+//ERROR HANDLING
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
@@ -291,24 +273,69 @@ app.use(function (err, req, res, next) {
 });
 
 
-function sendProfile(profile_id, res) {
-  Profile.find({_id: profile_id}, function (err, profiles) {
-    var profile = profiles[0];
-    if (profile.profile_finished == 1) {
-      var xhttp = new XMLHttpRequest();
-      xhttp.open("GET", "http://0.0.0.0:8080/get_synth_comm/" + JSON.stringify(profile), true);
-      xhttp.send();
-      xhttp.onload = function() {
-        var data = JSON.parse(xhttp.responseText);
-        res.send({profile: profile, predictions: data});
-        return 1;
-      }
+//HELPER FUNCTIONS
+
+function updateProfile(return_data, profile_id, dataset, profile, synth_profile) {
+  var update_profile_params = {
+    profile_finished: 1,
+    need_synth_profile: 1,
+    spin_up_time: return_data.spin_up_time,
+    actual_bid_per_machine: return_data.actual_bid_price,
+    total_price: return_data.total_price,
+    reservation_id: return_data.reservation.split(':')[1].split('\'')[0],
+    associated_synth_comm_profile_path: 'synth_' + Math.round(Math.log10(dataset.features)).toString() + 
+                                        '_' + profile.numberOfMachines.toString()
+  }
+  Profile.update({_id:profile_id}, {$set:update_profile_params}, function(err, profile) {
+    if (err) throw err;
+    console.log('Profile updated successfully!');
+    if (synth_profile.machine_counts[parseInt(profile.numberOfMachines) - 1] == 0) {
+      var new_machine_counts = synth_profile.machine_counts;
+      new_machine_counts[parseInt(profile.numberOfMachines) - 1] = 1;
+      SynthProfile.update({log_features: log_feats}, {$set:{machine_counts:new_machine_counts}}, function(err, synth_profile) {
+        if (err) throw err;
+        console.log('Synth Profile updated successfully!')
+        getProfileFromId(profile_id);
+      });
     }
     else {
-      return 0;
+      getProfileFromId(profile_id);
+    }
+  });
+};
+
+
+
+function getProfileFromId(profile_id) {
+  console.log("In getProfileFromId");
+  Profile.find({_id: profile_id}, function (err, profiles) {
+    var profile = profiles[0];
+    if (profiles.length > 0 && profile.profile_finished == 1) {
+      getProfile(profile);
     }
   }); 
 }
+
+function getProfile(profile) {
+  console.log("In getProfile");
+  var xhttp = new XMLHttpRequest();
+  xhttp.open("GET", "http://0.0.0.0:8080/get_profile_results/" + JSON.stringify(profile), true);
+  xhttp.send();
+  xhttp.onload = function() {
+    var data = JSON.parse(xhttp.responseText);
+    sendProfile(JSON.stringify({message: 'return profile data', profile: profile, predictions: data}));
+  }
+}
+
+function sendProfile(profile_data) {
+  wsTimeOutVar = setTimeout(function() { 
+    if (profile_ws != null) {
+      profile_ws.send(profile_data);
+      clearTimeout(wsTimeOutVar);
+    }
+  } , 250);
+}
+
 
 
 module.exports = app;

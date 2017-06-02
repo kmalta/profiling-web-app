@@ -9,8 +9,8 @@ function datasetGet(evt) {
 
     var xhttp = new XMLHttpRequest();
     xhttp.open("POST", "/process_dataset_from_name", true);
-    xhttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-    xhttp.send('data=' + JSON.stringify({dataset: dataset}));
+    xhttp.setRequestHeader("Content-Type", "application/json");
+    xhttp.send(JSON.stringify({dataset: dataset}));
     xhttp.onload = function() {
         var data = JSON.parse(xhttp.responseText);
         elem_visibility('dataset-profile-loader', 'none');
@@ -25,8 +25,8 @@ function datasetSave(evt) {
     var json_to_send = get_dataset_table_values();
     var xhttp = new XMLHttpRequest();
     xhttp.open("POST", "/dataset_db_save", true);
-    xhttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-    xhttp.send('data=' + JSON.stringify(json_to_send));
+    xhttp.setRequestHeader("Content-Type", "application/json");
+    xhttp.send(JSON.stringify(json_to_send));
     window.location.replace('/')
 }
 
