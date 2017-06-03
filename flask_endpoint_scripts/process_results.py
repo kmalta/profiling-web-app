@@ -18,7 +18,8 @@ def parse_log(save_dir, log_type):
             if ': Job' in line:
                 time_array.append(float(line.split()[-2]))
         return time_array[3:]
-    except:
+    except Exception as e:
+        print "ERROR:", repr(e)
         return -1
 
 
@@ -44,7 +45,8 @@ def get_total_log_time(save_dir, log_type):
         last_time = parser.parse(last_time_str)
         seconds = (last_time - first_time).total_seconds()
         return seconds
-    except:
+    except Exception as e:
+        print "ERROR:", repr(e)
         return -1
 
 def smooth_synth_close(synth_close):

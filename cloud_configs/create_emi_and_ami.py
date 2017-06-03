@@ -16,7 +16,7 @@ def setup_instance(ip):
 
     py_scp_to_remote('', ip, 'image_bundle/scripts.tar.gz', '~/scripts.tar.gz')
     py_scp_to_remote('', ip, 'image_bundle/build_dependencies.sh', '~/build_dependencies.sh')
-    py_ssh('', ip, 'source build_dependencies.sh')
+    py_ssh_to_log('', ip, 'source build_dependencies.sh', 'image_bundle/image-bundle-stdout' + time_str() + '.log', True)
 
 
 def create_image(conn):

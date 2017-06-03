@@ -8,7 +8,8 @@ def s3_boto_connection(key_id, secret_key, s3_service_path, s3_host):
         is_secure=False,
         port=8773,
         path=s3_service_path,
-        host=s3_host)
+        host=s3_host,
+        debug=2)
     return s3conn
 
 
@@ -19,7 +20,8 @@ def walrus_boto_connection(key_id, secret_key, s3_service_path, s3_host):
         is_secure=False,
         port=8773,
         path=s3_service_path,
-        host=s3_host)
+        host=s3_host,
+        debug=2)
     return s3conn
 
 
@@ -47,20 +49,13 @@ def get_dataset(s3url, s3conn):
     f.write(str(0))
     f.close()
 
-    try:
-        bucket = s3conn.get_bucket(bucket_name)
-        key = bucket.get_key(dataset)
-        key.get_contents_to_filename('/mnt/' + dataset)
+    bucket = s3conn.get_bucket(bucket_name)
+    key = bucket.get_key(dataset)
+    key.get_contents_to_filename('/mnt/' + dataset)
 
-        f = open('check_if_file_written', 'w')
-        f.write(str(1))
-        f.close()
-
-    except:
-
-        f = open('check_if_file_written', 'w')
-        f.write(str(2))
-        f.close()
+    f = open('check_if_file_written', 'w')
+    f.write(str(1))
+    f.close()
 
 
 
@@ -74,8 +69,15 @@ def main():
     s3_service_path = clp[5]
     s3_host = clp[6]
 
-    s3conn = start_s3_boto_connection(cloud_name, key_id, secret_key, s3_service_path, s3_host)
-    get_dataset(s3url, s3conn)
+    print repr(clp)
+
+    while(1):
+        try:
+            s3conn = start_s3_boto_connection(cloud_name, key_id, secret_key, s3_service_path, s3_host)
+            get_dataset(s3url, s3conn)
+            break
+        except Exception as e:
+            print repr(e)
 
 if __name__ == "__main__":
     main()

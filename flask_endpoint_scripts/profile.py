@@ -10,10 +10,9 @@ def profile(json_dict):
     profile_start = time()
 
 
-    #figure out logging output!
-    # file_suff = time_str()
-    # sys.stdout = open('output_logs/stdout-log' + file_suff, 'w')
-    # sys.stderr = open('output_logs/stderr-log' + file_suff, 'w')
+    unique_time = time_str()
+    old_stdout = sys.stdout
+    sys.stdout = mystdout = open('profiles/cloud_machine_request_logs/request' + unique_time + '.log', 'w', buffering=0)
 
 
     #BOTO Setup
@@ -22,23 +21,28 @@ def profile(json_dict):
 
 
     #TESTING CODE:
-    reservation_id = 'r-3b3a8ea5'
-    reservations = get_reservations(conn)
-    reservation = reservations[[str(res.id) for res in reservations].index(reservation_id)]
-    bid = float(json_dict['bidPerMachine'])
-    os.system('rm -rf profiles/' + repr(reservation) + '/profile_logs')
+    # reservation_id = 'r-3b3a8ea5'
+    # reservations = get_reservations(conn)
+    # reservation = reservations[[str(res.id) for res in reservations].index(reservation_id)]
+    # bid = float(json_dict['bidPerMachine'])
+    # os.system('rm -rf profiles/' + repr(reservation) + '/profile_logs')
 
     test = False
-    #reservation, bid = spot_launch(conn, json_dict['bidPerMachine'], json_dict['machineType'], int(json_dict['numberOfMachines']) + 1)
+    reservation, bid = spot_launch(conn, json_dict['bidPerMachine'], json_dict['machineType'], int(json_dict['numberOfMachines']) + 1)
 
-
-
-    instances = get_instances_from_reservation(reservation)
-    instance_ips = get_ips_from_instances(instances)
+    old_stdout.write(repr(reservation) + '\n')
 
     profile_dir = 'profiles/' + repr(reservation)
     os.system('mkdir ' + profile_dir)
     os.system('mkdir ' + profile_dir + '/profile_logs')
+
+    sys.stdout = mystdout = open(profile_dir + '/profile_logs/stdout.log', 'w', buffering=0)
+
+    os.system('mv profiles/cloud_machine_request_logs/request' + unique_time + '.log ' + profile_dir + '/profile_logs/request.log')
+
+
+    instances = get_instances_from_reservation(reservation)
+    instance_ips = get_ips_from_instances(instances)
 
 
     # #Get Cluster data structure
@@ -71,7 +75,7 @@ def profile(json_dict):
 
     synth_profile_time_end = time()
 
-    #terminate_instances_from_reservation(conn, reservation)
+    terminate_instances_from_reservation(conn, reservation)
 
     ret_dict = {}
     ret_dict['reservation'] = repr(reservation)
@@ -79,9 +83,15 @@ def profile(json_dict):
     ret_dict['actual_bid_price'] = bid
     ret_dict['total_price'] = round((int(json_dict['numberOfMachines']) + 1)*float(bid), 2)
     ret_dict['spin_up_time'] = setup_time_end - profile_start
+    ret_dict['value'] = 'SUCCESS'
 
     print repr(ret_dict)
+
+
+    sys.stdout = old_stdout
+
     return ret_dict
+
 
 
 
@@ -89,7 +99,7 @@ def profile(json_dict):
 
 def main():
 
-    profile_json = {'machineType': 'c4.xlarge', 'name': 'susy', 'bidPerMachine': '0.042', 'size_in_bytes': 2100000000, 'budget': '$0.17', 's3url': 's3://susy-data/susy_0', '__v': 0, 'features': 18, 'needSynthProfile': 0, 'samples': 5000000, '_id': '5930d170f95aee0a6194ee7a', 'machine_type': 'c4.xlarge', 'numberOfMachines': '3', 'datasetId': '5930d170f95aee0a6194ee7a', 'size': '2.1 GB'}
+    profile_json = {'machineType': 'c4.xlarge', 'name': 'susy', 'bidPerMachine': '0.042', 'size_in_bytes': 2100000000, 'budget': '$0.17', 's3url': 's3://susy-data/susy_0', '__v': 0, 'features': 18, 'needSynthProfile': 1, 'samples': 5000000, '_id': '5930d170f95aee0a6194ee7a', 'machine_type': 'c4.xlarge', 'numberOfMachines': '3', 'datasetId': '5930d170f95aee0a6194ee7a', 'size': '2.1 GB'}
     profile(profile_json)
 
 

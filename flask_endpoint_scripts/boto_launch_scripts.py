@@ -1,4 +1,4 @@
-import sys
+import sys, os, subprocess
 sys.path.insert(0,'.')
 
 import boto, errno, time
@@ -14,7 +14,8 @@ def time_str():
 
 def update_known_hosts(ips):
     for ip in ips:
-        os.system('ssh-keygen -q -R ' + ip + ' >/dev/null')
+        FNULL = open(os.devnull, 'w')
+        retcode = subprocess.call(['ssh-keygen', '-q', '-R', ip], stdout=FNULL, stderr=subprocess.STDOUT)
 
 
 

@@ -38,7 +38,7 @@ def py_ssh(additional_options, ip, post_command):
 def py_ssh_to_log(additional_options, ip, post_command, log_path, wait):
     pc = post_command
     ao = additional_options
-    log = open(log_path, 'a')
+    log = open(log_path, 'a+')
 
     cmd = 'ssh ' + ao + ' ' + options + '  ' + user + '@' + ip + ' "' + pc + '"'
     proc = Popen(cmd, stdout=log, stderr=log, shell=True, executable='/bin/bash')

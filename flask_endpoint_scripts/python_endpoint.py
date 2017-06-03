@@ -37,11 +37,15 @@ def schedule_profile(profile_str):
     profile_json = dict(request_json['dataset'], **request_json['profile'])
 
     print repr(profile_json)
-    profile_json = {'machineType': 'c4.xlarge', 'name': 'susy', 'bidPerMachine': '0.042', 'size_in_bytes': 2100000000, 'budget': '$0.17', 's3url': 's3://susy-data/susy_0', '__v': 0, 'features': 18, 'needSynthProfile': 0, 'samples': 5000000, '_id': '5930d170f95aee0a6194ee7a', 'machine_type': 'c4.xlarge', 'numberOfMachines': '3', 'datasetId': '5930d170f95aee0a6194ee7a', 'size': '2.1 GB'}
+    #profile_json = {'machineType': 'c4.xlarge', 'name': 'susy', 'bidPerMachine': '0.042', 'size_in_bytes': 2100000000, 'budget': '$0.17', 's3url': 's3://susy-data/susy_0', '__v': 0, 'features': 18, 'needSynthProfile': 0, 'samples': 5000000, '_id': '5930d170f95aee0a6194ee7a', 'machine_type': 'c4.xlarge', 'numberOfMachines': '3', 'datasetId': '5930d170f95aee0a6194ee7a', 'size': '2.1 GB'}
     #EXAMPLE TO MOCK CLOUD SCRIPTS
     #ret_dict = {'spin_up_time': 157.58713817596436, 'reservation': 'Reservation:r-027b71db', 'total_price': 0.17, 'actual_bid_price': '0.042', 'save_dir': 'profiles/Reservation:r-027b71db'}
-    ret_dict = profile(profile_json)
-    return jsonify(ret_dict)
+    #ret_dict = profile(profile_json)
+    
+    if ret_dict['value'] == 'SUCCESS':
+        return jsonify(ret_dict)
+    else:
+        sys.exit("WE RECEIVED AN ERROR!\nFor more information, check the logs.")
 
 @app.route('/get_profile_results/<path:profile_str>', methods=['GET'])
 @support_jsonp

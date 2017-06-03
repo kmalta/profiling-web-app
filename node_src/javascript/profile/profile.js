@@ -1,22 +1,28 @@
-const ws = new WebSocket('ws://localhost:5000');
-
-
-ws.onmessage = function incoming(event) {
-    var data = JSON.parse(event.data);
-    if (data['message'] == 'return profile data') {
-        update_pricing(data);
-        populate_timeseries(data);
-        populate_prediction_table(data);
-    }
-};
-
-
 window.onload = function grabProfileEntryInfo() {
+    const ws = new WebSocket('ws://localhost:5000');
+
     ws.onopen = function open() {
         ws.send(JSON.stringify({message: 'hello', client: 'profile'}));
+
+        ws.onmessage = function incoming(event) {
+            var data = JSON.parse(event.data);
+            if (data['message'] == 'return profile data') {
+                update_pricing(data);
+                populate_timeseries(data);
+                populate_prediction_table(data);
+            }
+        };
     };
+
+
+
     var url_arr = window.location.href.split('/');
     var profile_id = url_arr[url_arr.length -1].split('-')[0];
+
+
+    ping_profile_results(profile_id);
+
+
     var xhttp = new XMLHttpRequest();
     xhttp.open("POST", "/get_profile_db_entry", true);
     xhttp.setRequestHeader("Content-Type", "application/json");
@@ -25,8 +31,6 @@ window.onload = function grabProfileEntryInfo() {
         get_dataset_by_id(xhttp.responseText);
         populate_profile_info_table(xhttp.responseText);
     }
-
-    ping_profile_results(profile_id);
 };
 
 
@@ -37,6 +41,9 @@ function ping_profile_results(profile_id) {
     xhttp.open("PUT", "/get_profile_results", true);
     xhttp.setRequestHeader("Content-Type", "application/json");
     xhttp.send(JSON.stringify({profile_id: profile_id}));
+    xhttp.onload = function() {
+        ;
+    }
 };
 
 
