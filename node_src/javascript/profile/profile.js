@@ -12,11 +12,6 @@ window.onload = function grabProfileEntryInfo() {
                     populate_timeseries(data);
                     populate_prediction_table(data);
                 }
-                else {
-                    console.log(data.profile._id);
-                    console.log(get_profile_id());
-                    console.log("WE CAUGHT THE BUG!")
-                }
             }
         };
     };
