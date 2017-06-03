@@ -224,7 +224,7 @@ def scala_run_spark_job(nodes_info, worker_type, master_port, file_name, hadoop_
     finished_flag = 0
     if synth == False:
         finished_flag = 0
-        while(time() < 600 + start_time):
+        while(time() < real_max_time + start_time):
             if os.path.exists(time_out_check_path):
                 os.system('rm ' + time_out_check_path)
             py_ssh_to_log('', master_ip, 'jps', time_out_check_path, True)
@@ -236,7 +236,7 @@ def scala_run_spark_job(nodes_info, worker_type, master_port, file_name, hadoop_
                 break
             sleep(5)
     else:
-        sleep(100)
+        sleep(synth_max_time)
 
     if finished_flag == 0:
         os.system('rm ' + time_out_check_path)
@@ -325,15 +325,14 @@ def get_dataset(s3url, master_ip, working_dir):
 
     flag = 0
     py_ssh_to_log('', master_ip, get_data, working_dir + '/profile_logs/remote_stdout.log', True)
-    while(1):
-        sleep(3)
-        py_scp_to_local('', master_ip, 'check_if_file_written', working_dir + '/s3_file_written')
-        f = open(working_dir + '/s3_file_written', 'r')
-        if '1' in f.read():
-            os.system('rm ' + working_dir + '/s3_file_written')
-            break
+    # while(1):
+    #     sleep(3)
+    #     py_scp_to_local('', master_ip, 'check_if_file_written', working_dir + '/s3_file_written')
+    #     f = open(working_dir + '/s3_file_written', 'r')
+    #     if '1' in f.read():
+    #         os.system('rm ' + working_dir + '/s3_file_written')
+    #         break
 
-    sys.exit("We successfully got the dataset.  Crap.")
 
 
 

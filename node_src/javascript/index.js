@@ -55,7 +55,7 @@ var wsTimeOutVar;
 wss.on('connection', function(_ws) {
   _ws.on('message', function incoming(data) {
 
-    message = JSON.parse(data);
+    message = safeJSONParse(data);
 
     if (message['message'] == 'hello') {
       if (message['client'] == 'profile') {
@@ -127,7 +127,7 @@ app.post('/get_profile_db_entry', function(req, res) {
       xhttp.open("GET", 'http://0.0.0.0:8080/get_bid_price/' + JSON.stringify({data: datasets[0], numberOfMachines: profiles[0].number_of_machines}), true);
       xhttp.send();
       xhttp.onload = function() {
-        var data = JSON.parse(xhttp.responseText);
+        var data = safeJSONParse(xhttp.responseText);
         res.send(JSON.stringify({profile: profiles[0], bid_return: data}));
       }
     });
@@ -140,7 +140,7 @@ app.post('/get_bid', function(req, res) {
     xhttp.open("GET", 'http://0.0.0.0:8080/get_bid_price/' + JSON.stringify({data: datasets[0], numberOfMachines: req.body.number_of_machines}), true);
     xhttp.send();
     xhttp.onload = function() {
-      var data = JSON.parse(xhttp.responseText);
+      var data = safeJSONParse(xhttp.responseText);
       res.send(JSON.stringify({bid:data['bid'], index:req.body.index}));
     }
   });  
@@ -231,7 +231,7 @@ app.post('/profile_button_submit', function(req, res) {
         xhttp.open("GET", 'http://0.0.0.0:8080/submit_profile/' + json_send, true);
         xhttp.send();
         xhttp.onload = function() {
-          data = JSON.parse(xhttp.responseText);
+          data = safeJSONParse(xhttp.responseText);
           updateProfile(data, profile._id, dataset, req.body, synth_profile);
         }
         res.redirect('/profile/' + profile._id);
@@ -250,6 +250,7 @@ app.post('/profile_button_submit', function(req, res) {
 
 app.put('/get_profile_results', function(req, res) {
   getProfileFromId(req.body.profile_id);
+  res.send(JSON.stringify({message: 'Checked profile for completion.'}));
 });
 
 
@@ -307,7 +308,6 @@ function updateProfile(return_data, profile_id, dataset, profile, synth_profile)
 
 
 function getProfileFromId(profile_id) {
-  console.log("In getProfileFromId");
   Profile.find({_id: profile_id}, function (err, profiles) {
     var profile = profiles[0];
     if (profiles.length > 0 && profile.profile_finished == 1) {
@@ -317,12 +317,11 @@ function getProfileFromId(profile_id) {
 }
 
 function getProfile(profile) {
-  console.log("In getProfile");
   var xhttp = new XMLHttpRequest();
   xhttp.open("GET", "http://0.0.0.0:8080/get_profile_results/" + JSON.stringify(profile), true);
   xhttp.send();
   xhttp.onload = function() {
-    var data = JSON.parse(xhttp.responseText);
+    var data = safeJSONParse(xhttp.responseText);
     sendProfile(JSON.stringify({message: 'return profile data', profile: profile, predictions: data}));
   }
 }
@@ -330,10 +329,22 @@ function getProfile(profile) {
 function sendProfile(profile_data) {
   wsTimeOutVar = setTimeout(function() { 
     if (profile_ws != null) {
-      profile_ws.send(profile_data);
+      if (profile_ws.readyState === WebSocket.OPEN) {
+        profile_ws.send(profile_data);
+      }
       clearTimeout(wsTimeOutVar);
     }
   } , 250);
+}
+
+function safeJSONParse(json_str) {
+  var json_obj = {};
+  try {
+      json_obj = JSON.parse(json_str);
+  } catch(e) {
+      console.log(e); // error in the above string (in this case, yes)!
+  }
+  return json_obj;
 }
 
 

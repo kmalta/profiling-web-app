@@ -7,18 +7,23 @@ window.onload = function grabProfileEntryInfo() {
         ws.onmessage = function incoming(event) {
             var data = JSON.parse(event.data);
             if (data['message'] == 'return profile data') {
-                update_pricing(data);
-                populate_timeseries(data);
-                populate_prediction_table(data);
+                if (data.profile._id == get_profile_id()) {
+                    update_pricing(data);
+                    populate_timeseries(data);
+                    populate_prediction_table(data);
+                }
+                else {
+                    console.log(data.profile._id);
+                    console.log(get_profile_id());
+                    console.log("WE CAUGHT THE BUG!")
+                }
             }
         };
     };
 
 
 
-    var url_arr = window.location.href.split('/');
-    var profile_id = url_arr[url_arr.length -1].split('-')[0];
-
+    var profile_id = get_profile_id();
 
     ping_profile_results(profile_id);
 
@@ -151,4 +156,10 @@ function populate_prediction_table(message) {
     elem_visibility('profile-prediction-div', 'block')
     elem_visibility('profile-prediction-table', 'table');
 };
+
+function get_profile_id() {
+    var url_arr = window.location.href.split('/');
+    var profile_id = url_arr[url_arr.length -1].split('-')[0];
+    return profile_id;
+}
 

@@ -15,7 +15,7 @@ def parse_log(save_dir, log_type):
         f = open(save_dir + '/profile_logs/' + log_type + '.log', 'r')
         time_array = []
         for line in f:
-            if ': Job' in line:
+            if 'DAGScheduler: Job' in line:
                 time_array.append(float(line.split()[-2]))
         return time_array[3:]
     except Exception as e:
@@ -124,15 +124,18 @@ def compute_profile_predictions(profile_json):
 
 
 def main():
-    test_json = {}
+    # test_json = {}
 
-    reservation = 'r-28f2fe6d'
-    path = 'synth_1_4'
+    # reservation = 'r-28f2fe6d'
+    # path = 'synth_1_4'
 
-    test_json['reservation_id'] = reservation
-    test_json['associated_synth_comm_profile_path'] = path
+    # test_json['reservation_id'] = reservation
+    # test_json['associated_synth_comm_profile_path'] = path
 
-    compute_profile_predictions(test_json)
+    # compute_profile_predictions(test_json)
+
+    parse_log('/Users/Kevin/profiling-web-app/profiles/Reservation:r-9a20cbb9', 'synth')
+    #parse_log('/Users/Kevin/profiling-web-app/profiles/Reservation:r-a7670c64', 'synth')
 
 if __name__ == "__main__":
     main()

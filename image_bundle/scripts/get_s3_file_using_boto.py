@@ -8,8 +8,7 @@ def s3_boto_connection(key_id, secret_key, s3_service_path, s3_host):
         is_secure=False,
         port=8773,
         path=s3_service_path,
-        host=s3_host,
-        debug=2)
+        host=s3_host)
     return s3conn
 
 
@@ -20,8 +19,7 @@ def walrus_boto_connection(key_id, secret_key, s3_service_path, s3_host):
         is_secure=False,
         port=8773,
         path=s3_service_path,
-        host=s3_host,
-        debug=2)
+        host=s3_host)
     return s3conn
 
 
@@ -45,17 +43,17 @@ def get_dataset(s3url, s3conn):
         os.system('sudo rm /mnt/' + dataset)
 
 
-    f = open('check_if_file_written', 'w')
-    f.write(str(0))
-    f.close()
+    # f = open('check_if_file_written', 'w')
+    # f.write(str(0))
+    # f.close()
 
     bucket = s3conn.get_bucket(bucket_name)
     key = bucket.get_key(dataset)
     key.get_contents_to_filename('/mnt/' + dataset)
 
-    f = open('check_if_file_written', 'w')
-    f.write(str(1))
-    f.close()
+    # f = open('check_if_file_written', 'w')
+    # f.write(str(1))
+    # f.close()
 
 
 

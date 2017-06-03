@@ -23,7 +23,8 @@ db/*
 
 
 #Profiles
-profiles/*
+profiles/Reservation*
+profiles/cloud_machine_request_logs/*
 
 #Data configuration flies
 data_configs/*
