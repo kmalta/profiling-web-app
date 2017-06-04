@@ -103,20 +103,17 @@ def configure_spark(nodes_info, working_dir):
         f.write(node[0] + '\n')
     f.close()
 
-    py_scp_to_remote('', nodes_info[0][0], working_dir + '/spark_slaves', 'spark-2.0.0/conf/slaves')
-    for node in nodes_info:
-        #REMOVE ON REIMAGE
-        py_ssh_to_log('', node[0], 'echo -e export HADOOP_CONF_DIR=/usr/local/hadoop/etc/hadoop >> ~/spark-2.0.0/conf/spark-env.sh', working_dir + '/profile_logs/remote_stdout.log', True)
-        py_ssh_to_log('', node[0], 'echo -e export SPARK_LOCAL_DIRS=/mnt/spark >> ~/spark-2.0.0/conf/spark-env.sh', working_dir + '/profile_logs/remote_stdout.log', True)
+    py_scp_to_remote('', nodes_info[0][0], working_dir + '/spark_slaves', spark_home + '/conf/slaves')
+
 
 
 def start_spark(master_ip, working_dir):
-    py_ssh_to_log('', master_ip, 'spark-2.0.0/sbin/start-master.sh', working_dir + '/profile_logs/remote_stdout.log', True)
-    py_ssh_to_log('', master_ip, 'spark-2.0.0/sbin/start-slaves.sh', working_dir + '/profile_logs/remote_stdout.log', True)
+    py_ssh_to_log('', master_ip, spark_home + '/sbin/start-master.sh', working_dir + '/profile_logs/remote_stdout.log', True)
+    py_ssh_to_log('', master_ip, spark_home + '/sbin/start-slaves.sh', working_dir + '/profile_logs/remote_stdout.log', True)
 
 def stop_spark(master_ip, working_dir):
-    py_ssh_to_log('', master_ip, 'spark-2.0.0/sbin/stop-slaves.sh', working_dir + '/profile_logs/remote_stdout.log', True)
-    py_ssh_to_log('', master_ip, 'spark-2.0.0/sbin/stop-master.sh', working_dir + '/profile_logs/remote_stdout.log', True)
+    py_ssh_to_log('', master_ip, spark_home + '/sbin/stop-slaves.sh', working_dir + '/profile_logs/remote_stdout.log', True)
+    py_ssh_to_log('', master_ip, spark_home + '/sbin/stop-master.sh', working_dir + '/profile_logs/remote_stdout.log', True)
 
 def scala_send_spark_job(nodes_info, jar_path):
     for node in nodes_info:
@@ -180,7 +177,7 @@ def scala_run_spark_job(nodes_info, worker_type, master_port, file_name, hadoop_
 
 
     for node in nodes_info:
-        py_scp_to_remote('', node[0], 'spark_conf_files/log4j.properties', '~/spark-2.0.0/conf/log4j.properties')
+        py_scp_to_remote('', node[0], 'spark_conf_files/log4j.properties', spark_home + '/conf/log4j.properties')
         py_scp_to_remote('', node[0], 'spark_conf_files/hadoop-log4j.properties', '~/log4j.properties')
         py_ssh_to_log('', node[0], 'sudo mv ~/log4j.properties /usr/local/hadoop/etc/hadoop/log4j.properties', working_dir + '/profile_logs/remote_stdout.log', True)
 
@@ -190,12 +187,12 @@ def scala_run_spark_job(nodes_info, worker_type, master_port, file_name, hadoop_
     driver_mem, executor_mem, spark_max_reult, num_cores = get_params(worker_type, num_cores, working_dir)
 
     for node in nodes_info:
-        py_scp_to_remote('', node[0], working_dir + '/spark-defaults.conf', '~/spark-2.0.0/conf/spark-defaults.conf')
+        py_scp_to_remote('', node[0], working_dir + '/spark-defaults.conf', spark_home + '/conf/spark-defaults.conf')
 
 
 
     run_str = [
-               '~/spark-2.0.0/bin/spark-submit',
+               spark_home + '/bin/spark-submit',
                '--verbose',
                '--master', 'spark://' + nodes_info[0][1] + ':7077',
                '--deploy-mode client ',
@@ -268,7 +265,7 @@ def create_hdfs_site_file(nodes_info, replication, idx, working_dir):
                                    "echo -ne file:///mnt/datanode > datanode_path", working_dir + '/profile_logs/remote_stdout.log', True)
     cat_arg = ['cat hadoop_conf_files/hdfs_site_beginning.xml replication_tmp ' + 
                'hadoop_conf_files/hdfs_site_middle_1.xml namenode_path ' + 
-               'hadoop_conf_files/hdfs_site_middle_1.xml datanode_path ' + 
+               'hadoop_conf_files/hdfs_site_middle_2.xml datanode_path ' + 
                'hadoop_conf_files/hdfs_site_ending.xml ' + 
                '> hadoop_conf_files/hdfs-site.xml']
     py_ssh_to_log('', nodes_info[idx][0], cat_arg[0], working_dir + '/profile_logs/remote_stdout.log', True)
@@ -319,19 +316,20 @@ def preconfigure_nodes(nodes_info, working_dir):
 
 
 def get_dataset(s3url, master_ip, working_dir):
+    get_data_arr = ['python scripts/get_s3_file_using_boto.py', s3url, cloud_name, key_id, secret_key]
+    if cloud_name == 'aristotle':
+        get_data_arr.append(s3_service_path)
+        get_data_arr.append(s3_host)
+    elif cloud_name == 'aws':
+        get_data_arr.append(aws_region)
+        get_data_arr.append(aws_endpoint)
+    else:
+        print "WE DID NOT RECEIVE AN APPROPRIATE CLOUD NAME"
 
-    get_data_arr = ['python scripts/get_s3_file_using_boto.py', s3url, cloud_name, key_id, secret_key, s3_service_path, s3_host]
     get_data = ' '.join(get_data_arr)
 
     flag = 0
     py_ssh_to_log('', master_ip, get_data, working_dir + '/profile_logs/remote_stdout.log', True)
-    # while(1):
-    #     sleep(3)
-    #     py_scp_to_local('', master_ip, 'check_if_file_written', working_dir + '/s3_file_written')
-    #     f = open(working_dir + '/s3_file_written', 'r')
-    #     if '1' in f.read():
-    #         os.system('rm ' + working_dir + '/s3_file_written')
-    #         break
 
 
 
@@ -357,20 +355,23 @@ def configure_machines_for_spark_job_experiments(s3url, working_dir, replication
     os.system('cp config_file_templates/hosts_file_end ' + working_dir + '/')
 
 
+    # for node in nodes_info:
+    #     # if cloud_name == 'aristotle':
+    #     py_scp_to_remote('', node[0], 'scripts_to_run_locally/euca-test-aws.sh', '')
+    #     py_ssh_to_log('', node[0], 'source euca-test-aws.sh', working_dir + '/profile_logs/remote_stdout.log', True)
 
-    ###
-    #remove all this on reimage
+    #     #py_ssh_to_log('', node[0], 'sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1; sudo sysctl -w net.ipv6.conf.default.disable_ipv6=1', working_dir + '/profile_logs/remote_stdout.log', True)
 
-    for node in nodes_info:
-        py_cmd_line('tar -czf image_bundle/not_just_scripts.tar.gz -C image_bundle scripts hadoop_conf_files >/dev/null')
-        py_scp_to_remote('', node[0], 'image_bundle/not_just_scripts.tar.gz', '~/not_just_scripts.tar.gz')
-        py_ssh_to_log('', node[0], 'rm -rf scripts; rm -rf hadoop_conf_files; mv ~/not_just_scripts.tar.gz ~/scripts.tar.gz; tar -xzf scripts.tar.gz >/dev/null', working_dir + '/profile_logs/remote_stdout.log', True)
+    #     py_cmd_line('tar -czf image_bundle/not_just_scripts.tar.gz -C image_bundle scripts hadoop_conf_files >/dev/null')
+    #     py_scp_to_remote('', node[0], 'image_bundle/not_just_scripts.tar.gz', '~/not_just_scripts.tar.gz')
+    #     py_ssh_to_log('', node[0], 'rm -rf scripts; rm -rf hadoop_conf_files; mv ~/not_just_scripts.tar.gz ~/scripts.tar.gz; tar -xzf scripts.tar.gz >/dev/null', working_dir + '/profile_logs/remote_stdout.log', True)
 
-    for ip in ips:
-        py_ssh_to_log('', ip, 'sudo chown ubuntu:ubuntu /; sudo chown -R ubuntu:ubuntu /mnt; mkdir /mnt/spark', working_dir + '/profile_logs/remote_stdout.log', True)
 
-    py_ssh_to_log('', master_ip, 'pip install boto', working_dir + '/profile_logs/remote_stdout.log', True)
-    py_ssh_to_log('', master_ip, 'sudo chown ubuntu:ubuntu /; sudo chown -R ubuntu:ubuntu /mnt; mkdir /mnt/spark;', working_dir + '/profile_logs/remote_stdout.log', True)
+    # for ip in ips:
+    #     py_ssh_to_log('', ip, 'sudo chown ubuntu:ubuntu /; sudo chown -R ubuntu:ubuntu /mnt; mkdir /mnt/spark', working_dir + '/profile_logs/remote_stdout.log', True)
+
+    # py_ssh_to_log('', master_ip, 'pip install boto', working_dir + '/profile_logs/remote_stdout.log', True)
+    # py_ssh_to_log('', master_ip, 'sudo chown ubuntu:ubuntu /; sudo chown -R ubuntu:ubuntu /mnt; mkdir /mnt/spark;', working_dir + '/profile_logs/remote_stdout.log', True)
 
 
 

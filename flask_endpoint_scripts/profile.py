@@ -31,7 +31,8 @@ def profile(json_dict, ret_dict):
 
 
     #TESTING CODE:
-    # reservation_id = 'r-3b3a8ea5'
+    # reservation_id = 'r-0d20af8f28c7ece7c'
+    # #reservation_id = 'r-c81dea2d'
     # reservations = get_reservations(conn)
     # reservation = reservations[[str(res.id) for res in reservations].index(reservation_id)]
     # bid = float(json_dict['bidPerMachine'])

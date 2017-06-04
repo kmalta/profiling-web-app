@@ -20,6 +20,8 @@ def parse_log(save_dir, log_type):
         return time_array[3:]
     except Exception as e:
         print "ERROR:", repr(e)
+        print log_type
+        print line
         return -1
 
 
@@ -35,11 +37,15 @@ def get_total_log_time(save_dir, log_type):
         f = open(save_dir + '/profile_logs/' + log_type + '.log', 'r')
         first_time_str = ''
         last_time_str = ''
+        first_line = ''
+        last_line = ''
         for line in f:
-            if 'Running Spark version 2.0.0' in line:
+            if 'Running Spark version ' in line:
                 first_time_str = ' '.join(line.split()[:2])
+                first_line = line
             if 'Deleting directory /mnt/spark/' in line:
                 last_time_str = safe_split(line)
+                last_line = line
 
         first_time = parser.parse(first_time_str)
         last_time = parser.parse(last_time_str)
@@ -47,6 +53,9 @@ def get_total_log_time(save_dir, log_type):
         return seconds
     except Exception as e:
         print "ERROR:", repr(e)
+        print log_type
+        print first_line
+        print last_line
         return -1
 
 def smooth_synth_close(synth_close):

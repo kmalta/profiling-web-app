@@ -39,3 +39,15 @@ output_logs/*
 *cloud_configs/aristotle
 *cloud_configs/aws
 *cloud_configs/which_cloud.py
+
+#DS store?
+.DS_Store
+
+#image bundling logs
+image_bundle/image_bundle_logs/*
+
+#Datasets
+susy
+synth_*_*
+higgs
+url-combined

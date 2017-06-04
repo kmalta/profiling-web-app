@@ -5,7 +5,12 @@ tar -xzf scripts.tar.gz
 sudo apt-get update
 sudo apt-get -y install g++ make autoconf git libtool uuid-dev openssh-server cmake bc libopenmpi-dev openmpi-bin libssl-dev libnuma-dev 
 sudo apt-get -y install python-dev python-numpy python-pip python-scipy python-yaml protobuf-compiler subversion libxml2-dev libxslt-dev 
-sudo apt-get -y install ssh rsync zlibc zlib1g zlib1g-dev libbz2-1.0 libbz2-dev openjdk-7-jdk
+sudo apt-get -y install ssh rsync zlibc zlib1g zlib1g-dev libbz2-1.0 libbz2-dev
+sudo apt-get -y install openjdk-8-jdk
+
+sudo -H pip install --upgrade pip
+sudo -H pip install setuptools
+sudo -H pip install boto
 
 
 wget http://www.scala-lang.org/files/archive/scala-2.11.7.tgz
@@ -22,16 +27,18 @@ tar -xvvf hadoop-2.7.3.tar.gz
 
 
 cd ~
-wget http://apache.mirrors.ionfish.org/spark/spark-2.0.0/spark-2.0.0-bin-hadoop2.7.tgz
-tar -xvvf spark-2.0.0-bin-hadoop2.7.tgz
-mv spark-2.0.0-bin-hadoop2.7 spark-2.0.0
+wget http://apache.mirrors.ionfish.org/spark/spark-2.0.2/spark-2.0.2-bin-hadoop2.7.tgz
+tar -xvvf spark-2.0.2-bin-hadoop2.7.tgz
+mv spark-2.0.2-bin-hadoop2.7 spark-2.0.2
 
-echo "export PATH='~/spark-2.0.0/bin/:$PATH'" >> ~/.bashrc
+echo "export SPARK_HOME_DIR=/home/ubuntu/spark-2.0.2" >> ~/.bashrc
+echo "export SPARK_HOME_DIR=/home/ubuntu/spark-2.0.2" >> ~/.profile
+echo "export PATH='$SPARK_HOME_DIR/bin/:$PATH'" >> ~/.bashrc
 . ~/.bashrc
 
 
 sudo mv ~/hadoop-2.7.3 /usr/local/hadoop
-echo -e "export JAVA_HOME=/usr/lib/jvm/java-7-openjdk-amd64" >> ~/.profile
+echo -e "export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64" >> ~/.profile
 echo -e "export HADOOP_HOME=/usr/local/hadoop" >> ~/.profile
 echo -e "export HADOOP_CONF_DIR=/usr/local/hadoop/etc/hadoop" >> ~/.profile
 . ~/.profile
@@ -47,18 +54,15 @@ echo -e "export HADOOP_OPTS=-Djava.library.path="$HADOOP_HOME"/lib/native" >> ~/
 
 sudo chown ubuntu:ubuntu /mnt
 mkdir ~/jars
-mkdir /mnt/spark
+
+
 
 
 sudo mv ~/ssh_config /etc/ssh/ssh_config
 sudo chown root:root /etc/ssh/ssh_config
 sudo chmod 644 /etc/ssh/ssh_config
+sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1; sudo sysctl -w net.ipv6.conf.default.disable_ipv6=1
 
 
-sudo pip install setuptools
-sudo pip install boto
 rm -rf *gz
-
-cd ~
-mv scripts_to_run_remotely scripts
-source ~/scripts/build_image_script.sh
+rm scripts/build_image_script.sh

@@ -8,7 +8,7 @@ import math
 
 
 def get_data_stats(cfg_file):
-    f = open('data_configs/' + cfg_file + '.cfg', 'r')
+    f = open('data_configs/' + cloud_name + '/' + cfg_file + '.cfg', 'r')
     cfgs = f.readlines()
     f.close()
 
@@ -20,12 +20,18 @@ def get_data_stats(cfg_file):
 
     dataset_dict = {}
     dataset_dict['message'] = 'return profile data'
-    dataset_dict['s3url'] = 's3://' + s3_bucket + '/' + s3_name
     dataset_dict['name'] = cfg_file
     dataset_dict['size_in_bytes'] = size_in_bytes
     dataset_dict['samples'] = samples
     dataset_dict['features'] = features
     dataset_dict['num_workers'] = 4;
+
+    if cloud_name == 'aristotle':
+        dataset_dict['s3url'] = 's3://' + s3_bucket + '/' + s3_name
+    elif cloud_name == 'aws':
+        dataset_dict['s3url'] = 'https://s3-us-west-1.amazonaws.com/' + s3_bucket + '/' + s3_name
+    else:
+        print "WE DID NOT RECEIVE AN APPROPRIATE CLOUD NAME"
 
 
     inst_types = ['c4.xlarge', 'm4.xlarge', 'r4.2xlarge']

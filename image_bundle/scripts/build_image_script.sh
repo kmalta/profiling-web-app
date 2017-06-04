@@ -14,3 +14,10 @@ rm /home/ubuntu/build-dependencies.sh
 sudo apt-get -y upgrade
 sudo apt-get -y dist-upgrade
 sudo apt-get -y autoremove
+
+# sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1; sudo sysctl -w net.ipv6.conf.default.disable_ipv6=1
+
+# sudo iptables -P INPUT ACCEPT
+# sudo iptables -P OUTPUT ACCEPT
+# sudo iptables -P FORWARD ACCEPT
+# sudo iptables -F
