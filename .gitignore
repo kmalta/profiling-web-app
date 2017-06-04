@@ -51,3 +51,6 @@ susy
 synth_*_*
 higgs
 url-combined
+
+#Server logs
+server_logs/*
