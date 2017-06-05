@@ -1,4 +1,4 @@
-# Epoch Profiling Web Application for Logistic Regression in Spark
+# Epoch Profiling Web App for Logistic Regression in Spark
 ## Master's Project for UCSB's RACELab
 
     The repository contains a project whose description will change soon.
