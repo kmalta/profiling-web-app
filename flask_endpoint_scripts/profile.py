@@ -28,16 +28,6 @@ def profile(json_dict, ret_dict):
     #BOTO Setup
     conn = start_ec2_boto_connection()
 
-
-
-    #TESTING CODE:
-    # reservation_id = 'r-0d20af8f28c7ece7c'
-    # #reservation_id = 'r-c81dea2d'
-    # reservations = get_reservations(conn)
-    # reservation = reservations[[str(res.id) for res in reservations].index(reservation_id)]
-    # bid = float(json_dict['bidPerMachine'])
-    # os.system('rm -rf profiles/' + repr(reservation) + '/profile_logs')
-
     test = False
     reservation, bid = spot_launch(conn, json_dict['bidPerMachine'], json_dict['machineType'], int(json_dict['numberOfMachines']) + 1)
 
@@ -60,7 +50,6 @@ def profile(json_dict, ret_dict):
     instance_ips = get_ips_from_instances(instances)
 
 
-    # #Get Cluster data structure
     dataset, nodes_info = configure_machines_for_spark_job_experiments(json_dict['s3url'], profile_dir, fixed_replication, instance_ips, test)
     master_ip = nodes_info[0][0]
 

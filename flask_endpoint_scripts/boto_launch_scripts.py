@@ -112,8 +112,6 @@ def start_s3_boto_connection():
 
 
 def get_euca_worker_type(worker_type):
-    euca_instance_types = ['cg1.4xlarge', 'm1.large', 'm2.4xlarge']
-    aws_instance_types = ['c4.xlarge', 'm4.xlarge', 'r4.2xlarge']
     worker_type = euca_instance_types[aws_instance_types.index(worker_type)]
     return worker_type
 
@@ -124,7 +122,7 @@ def spot_launch(conn, bid, instance_type, num_insts):
         if launch_type == 'spot':
             return aws_spot_launch(conn, bid, instance_type, num_insts, node_image)
         elif launch_type == 'on-demand':
-            return launch_and_wait(conn, instance_type, num_insts, node_image), bid
+            return launch_and_wait(conn, instance_type, num_insts, node_image), aws_on_demand_prices[aws_instance_types.index(instance_type)]
         else:
             print "WE DID NOT RECEIVE AN APPROPRIATE LAUNCH TYPE"
 
