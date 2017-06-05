@@ -7,7 +7,8 @@ from boto.ec2.blockdevicemapping import BlockDeviceMapping, EBSBlockDeviceType
 
 def create_security_group(conn):
     try:
-        conn.delete_security_group(cloud_name + '-default')
+        if len(conn.get_all_security_groups([cloud_name + '-default'])) != 0:
+            conn.delete_security_group(cloud_name + '-default')
     except:
         1
     try:
