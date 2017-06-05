@@ -48,3 +48,6 @@ node_modules
 #MongoDB
 mongodb
 
+#package.json Lock
+*package-lock.json
+

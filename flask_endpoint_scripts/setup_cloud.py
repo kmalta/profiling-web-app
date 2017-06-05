@@ -121,33 +121,33 @@ def scala_send_spark_job(nodes_info, jar_path):
 def euca_get_params(worker_type, num_cores, working_dir):
     worker_type = get_euca_worker_type(worker_type)
     if 'hi1.4xlarge' in worker_type:
-        os.system('cp spark_conf_files/' + cloud_name + '/hi1.4xlarge.conf ' + working_dir + '/spark-defaults.conf')
+        os.system('cp spark_conf_files/' + cloud + '/hi1.4xlarge.conf ' + working_dir + '/spark-defaults.conf')
         return '35000m', '35000m', '--conf spark.driver.maxResultSize=7g', 2*num_cores
     elif 'm1.large' in worker_type:
-        os.system('cp spark_conf_files/' + cloud_name + '/m1.large.conf ' + working_dir + '/spark-defaults.conf')
+        os.system('cp spark_conf_files/' + cloud + '/m1.large.conf ' + working_dir + '/spark-defaults.conf')
         return '11500m', '11500m', '--conf spark.driver.maxResultSize=7g', num_cores
     else:
-        os.system('cp spark_conf_files/' + cloud_name + '/cg1.4xlarge.conf ' + working_dir + '/spark-defaults.conf')
+        os.system('cp spark_conf_files/' + cloud + '/cg1.4xlarge.conf ' + working_dir + '/spark-defaults.conf')
         return '4000m', '4000m', '', num_cores
 
 def aws_get_params(worker_type, num_cores, working_dir):
     if 'r4.2xlarge' in worker_type:
-        os.system('cp spark_conf_files/' + cloud_name + '/r4.2xlarge.conf ' + working_dir + '/spark-defaults.conf')
+        os.system('cp spark_conf_files/' + cloud + '/r4.2xlarge.conf ' + working_dir + '/spark-defaults.conf')
         return '48000m', '48000m', '--conf spark.driver.maxResultSize=10g', 2*num_cores
     elif 'm4.xlarge' in worker_type:
-        os.system('cp spark_conf_files/' + cloud_name + '/m4.xlarge.conf ' + working_dir + '/spark-defaults.conf')
+        os.system('cp spark_conf_files/' + cloud + '/m4.xlarge.conf ' + working_dir + '/spark-defaults.conf')
         return '11500m', '11500m', '--conf spark.driver.maxResultSize=7g', num_cores
     else:
-        os.system('cp spark_conf_files/' + cloud_name + '/c4.xlarge.conf ' + working_dir + '/spark-defaults.conf')
+        os.system('cp spark_conf_files/' + cloud + '/c4.xlarge.conf ' + working_dir + '/spark-defaults.conf')
         return '4000m', '4000m', '', num_cores
 
 
 
 def get_params(worker_type, num_machs, working_dir):
     num_cores = num_machs*4
-    if cloud_name == 'aristotle':
+    if cloud == 'aristotle':
         return euca_get_params(worker_type, num_cores, working_dir)
-    elif cloud_name == 'aws':
+    elif cloud == 'aws':
         return aws_get_params(worker_type, num_cores, working_dir)
     else:
         print "WE DID NOT RECEIVE AN APPROPRIATE CLOUD NAME"
@@ -314,11 +314,11 @@ def preconfigure_nodes(nodes_info, working_dir):
 
 
 def get_dataset(s3url, master_ip, working_dir):
-    get_data_arr = ['python scripts/get_s3_file_using_boto.py', s3url, cloud_name, key_id, secret_key]
-    if cloud_name == 'aristotle':
+    get_data_arr = ['python scripts/get_s3_file_using_boto.py', s3url, cloud, key_id, secret_key]
+    if cloud == 'aristotle':
         get_data_arr.append(s3_service_path)
         get_data_arr.append(s3_host)
-    elif cloud_name == 'aws':
+    elif cloud == 'aws':
         get_data_arr.append(aws_region)
         get_data_arr.append(aws_endpoint)
     else:

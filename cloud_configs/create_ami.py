@@ -61,7 +61,7 @@ def create_image(conn):
         images = conn.get_all_images(owners=['self'])
         for image in images:
             image.deregister()
-        f = open('cloud_configs/' + cloud_name + '/' + cloud_name + '_node_image.py', 'w')
+        f = open('cloud_configs/' + cloud + '/' + cloud + '_node_image.py', 'w')
         f.write("node_image = 'DEREGISTERED!'")
         f.close()
     except:
@@ -90,7 +90,7 @@ def create_image(conn):
     f.write('#'*30 + '\n')
     f.close()
 
-    f = open('cloud_configs/' + cloud_name + '/' + cloud_name + '_node_image.py', 'w')
+    f = open('cloud_configs/' + cloud + '/' + cloud + '_node_image.py', 'w')
     f.write("node_image = '" + str(node_image) + "'")
     f.close()
 

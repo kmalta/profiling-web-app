@@ -17,10 +17,10 @@ def walrus_boto_connection(key_id, secret_key, s3_service_path, s3_host):
         host=s3_host)
     return s3conn
 
-def start_s3_boto_connection(cloud_name, key_id, secret_key, service_path, host):
-    if cloud_name == 'aristotle':
+def start_s3_boto_connection(cloud, key_id, secret_key, service_path, host):
+    if cloud == 'aristotle':
         return walrus_boto_connection(key_id, secret_key, service_path, host)
-    elif cloud_name == 'aws':
+    elif cloud == 'aws':
         return s3_boto_connection(key_id, secret_key)
     else:
         print "WE DID NOT RECEIVE AN APPROPRIATE CLOUD NAME"
@@ -40,7 +40,7 @@ def get_dataset(s3url, s3conn):
 def main():
     clp = sys.argv
     s3url = clp[1]
-    cloud_name = clp[2]
+    cloud = clp[2]
     key_id = clp[3]
     secret_key = clp[4]
     service_path = ''
@@ -54,7 +54,7 @@ def main():
 
     while(1):
         try:
-            s3conn = start_s3_boto_connection(cloud_name, key_id, secret_key, service_path, host)
+            s3conn = start_s3_boto_connection(cloud, key_id, secret_key, service_path, host)
             get_dataset(s3url, s3conn)
             break
         except Exception as e:

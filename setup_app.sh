@@ -33,5 +33,5 @@ echo -e 'export PATH="$MONGODB_HOME/bin:${PATH}"' >> ~/.bash_profile
 
 
 #MAKE NODE IMAGE
-python cloud_configs/create_ami.py
-python terminate_and_show_reservations.py
+python $PROFILE_WEB_APP_HOME/cloud_configs/create_ami.py
+python $PROFILE_WEB_APP_HOME/bin/terminate_and_show_reservations.py

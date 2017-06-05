@@ -75,9 +75,9 @@ def euca_ec2_boto_connection():
 
 
 def start_ec2_boto_connection():
-    if cloud_name == 'aristotle':
+    if cloud == 'aristotle':
         return euca_ec2_boto_connection()
-    elif cloud_name == 'aws':
+    elif cloud == 'aws':
         return aws_ec2_boto_connection()
     else:
         print "WE DID NOT RECEIVE AN APPROPRIATE CLOUD NAME"
@@ -103,9 +103,9 @@ def walrus_boto_connection():
 
 
 def start_s3_boto_connection():
-    if cloud_name == 'aristotle':
+    if cloud == 'aristotle':
         return walrus_boto_connection()
-    elif cloud_name == 'aws':
+    elif cloud == 'aws':
         return s3_boto_connection()
     else:
         print "WE DID NOT RECEIVE AN APPROPRIATE CLOUD NAME"
@@ -116,9 +116,9 @@ def get_euca_worker_type(worker_type):
     return worker_type
 
 def spot_launch(conn, bid, instance_type, num_insts):
-    if cloud_name == 'aristotle':
+    if cloud == 'aristotle':
         return launch_and_wait(conn, instance_type, num_insts, node_image), bid
-    elif cloud_name == 'aws':
+    elif cloud == 'aws':
         if launch_type == 'spot':
             return aws_spot_launch(conn, bid, instance_type, num_insts, node_image)
         elif launch_type == 'on-demand':
@@ -205,9 +205,9 @@ def aws_launch(conn, instance_type, num_insts, image_id):
 
 
 def launch_and_wait(conn, instance_type, num_insts, image_id):
-    if cloud_name == 'aristotle':
+    if cloud == 'aristotle':
         return euca_launch(conn, instance_type, num_insts, image_id)
-    elif cloud_name == 'aws':
+    elif cloud == 'aws':
         return aws_launch(conn, instance_type, num_insts, image_id)
     else:
         print "WE DID NOT RECEIVE AN APPROPRIATE CLOUD NAME"
