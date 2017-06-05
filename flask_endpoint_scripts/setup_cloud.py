@@ -68,7 +68,6 @@ def create_etc_hosts_file(nodes_info, idx, working_dir):
         f.write(node[2] + ' ' + node[1] + '\n')
     f.write('\n')
     f.close()
-    os.system('cat ' + working_dir + '/hosts_file_beginning ' + working_dir + '/hosts_file_end > ' + working_dir + '/all_hosts_file')
 
 
 def setup_passwordless_ssh(master_ip, master_priv_ip, working_dir):
@@ -294,8 +293,7 @@ def configure_hadoop(nodes_info, replication, working_dir):
 
         py_scp_to_remote('', node[0], working_dir + '/hostfile', 'hostfile')
         create_etc_hosts_file(nodes_info, i, working_dir)
-        py_scp_to_remote('', node[0], working_dir + '/all_hosts_file', 'all_hosts_file')
-
+        py_scp_to_remote('', node[0], working_dir + '/hosts_file_beginning', 'hosts_file_beginning')
 
 
 
@@ -353,27 +351,6 @@ def configure_machines_for_spark_job_experiments(s3url, working_dir, replication
         return dataset, nodes_info
 
     os.system('cp config_file_templates/hosts_file_end ' + working_dir + '/')
-
-
-    # for node in nodes_info:
-    #     # if cloud_name == 'aristotle':
-    #     py_scp_to_remote('', node[0], 'scripts_to_run_locally/euca-test-aws.sh', '')
-    #     py_ssh_to_log('', node[0], 'source euca-test-aws.sh', working_dir + '/profile_logs/remote_stdout.log', True)
-
-    #     #py_ssh_to_log('', node[0], 'sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1; sudo sysctl -w net.ipv6.conf.default.disable_ipv6=1', working_dir + '/profile_logs/remote_stdout.log', True)
-
-    #     py_cmd_line('tar -czf image_bundle/not_just_scripts.tar.gz -C image_bundle scripts hadoop_conf_files >/dev/null')
-    #     py_scp_to_remote('', node[0], 'image_bundle/not_just_scripts.tar.gz', '~/not_just_scripts.tar.gz')
-    #     py_ssh_to_log('', node[0], 'rm -rf scripts; rm -rf hadoop_conf_files; mv ~/not_just_scripts.tar.gz ~/scripts.tar.gz; tar -xzf scripts.tar.gz >/dev/null', working_dir + '/profile_logs/remote_stdout.log', True)
-
-
-    # for ip in ips:
-    #     py_ssh_to_log('', ip, 'sudo chown ubuntu:ubuntu /; sudo chown -R ubuntu:ubuntu /mnt; mkdir /mnt/spark', working_dir + '/profile_logs/remote_stdout.log', True)
-
-    # py_ssh_to_log('', master_ip, 'pip install boto', working_dir + '/profile_logs/remote_stdout.log', True)
-    # py_ssh_to_log('', master_ip, 'sudo chown ubuntu:ubuntu /; sudo chown -R ubuntu:ubuntu /mnt; mkdir /mnt/spark;', working_dir + '/profile_logs/remote_stdout.log', True)
-
-
 
     get_dataset(s3url, master_ip, working_dir)
     configure_hadoop(nodes_info, replication, working_dir)

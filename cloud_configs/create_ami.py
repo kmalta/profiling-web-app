@@ -5,6 +5,21 @@ from flask_endpoint_scripts.boto_launch_scripts import *
 from boto.ec2.blockdevicemapping import BlockDeviceMapping, EBSBlockDeviceType
 
 
+def create_security_group(conn):
+    try:
+        conn.delete_security_group(cloud_name + '-default')
+    except:
+        1
+    try:
+        sg = conn.create_security_group(cloud_name + '-default', 'AWS security group, open to all.')
+
+        ip_protocols = ['tcp', 'udp', 'icmp']
+        port_ranges = [(0, 65535), (0, 65535), (-1, -1)]
+        for ip_protocol, port_ranges in zip(ip_protocols, port_ranges):
+            sg.authorize(ip_protocol, port_ranges[0], port_ranges[1], '0.0.0.0/0')
+    except:
+        1
+
 def setup_instance(ip):
     cmd = ['tar', '-czf','image_bundle/scripts.tar.gz', '-C', 'image_bundle', 
            'scripts', 'ssh_config', 'hadoop_conf_files','-C', '../cloud_configs', 
@@ -82,6 +97,7 @@ def create_image(conn):
 
 def main():
     conn = start_ec2_boto_connection()
+    create_security_group(conn)
     create_image(conn)
 
 

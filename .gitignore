@@ -1,18 +1,9 @@
-#CONFIG FILES
-*.ini
-
 #PEMS
 *.pem
 
 #DATABASE
-*/db/*
 db/*
 
-#HOSTFILES
-*host*
-
-#S3 Config Files
-*s3cfg
 
 #Python .pyc Files
 *.pyc
@@ -23,28 +14,24 @@ db/*
 
 
 #Profiles
-profiles/Reservation*
-profiles/cloud_machine_request_logs/*
+profiles
 
 #Data configuration flies
-data_configs/*
+data_configs
 
 #synth comm arrays
-synth_comm_array_files/*
-
-#output logs
-output_logs/*
+synth_comm_array_files
 
 #cloud configuration files
-*cloud_configs/aristotle
-*cloud_configs/aws
-*cloud_configs/which_cloud.py
+cloud_configs/aristotle
+cloud_configs/aws/*
 
-#DS store?
+
+#DS store
 .DS_Store
 
 #image bundling logs
-image_bundle/image_bundle_logs/*
+image_bundle/image_bundle_logs
 
 #Datasets
 susy
@@ -53,4 +40,11 @@ higgs
 url-combined
 
 #Server logs
-server_logs/*
+server_logs
+
+#Node modules
+node_modules
+
+#MongoDB
+mongodb
+

@@ -1,0 +1,29 @@
+key_id = ''
+secret_key = ''
+
+launch_type = 'on-demand'
+
+cloud = 'aws'
+security_group = cloud + '-default'
+key_name = cloud + '-key'
+cloud_abbrev = 'ip'
+user = 'ubuntu'
+aws_region = 'us-west-1'
+jar_pref = 'file:///home/ubuntu/jars/'
+aws_endpoint = 'ec2.' + aws_region + '.amazonaws.com'
+price_module_base_url = 'http://128.111.84.183/'
+remote_pem_path = cloud + '/' + cloud + '-key.pem'
+local_pem_path = 'cloud_configs/' + remote_pem_path
+options = '-q -o stricthostkeychecking=no -i ' + local_pem_path
+base_instance_type = 'c4.xlarge'
+base_image = 'ami-2afbde4a'
+
+
+#SPARK AND PROFILE CONFIGS
+spark_home = '/home/ubuntu/spark-2.0.2'
+fixed_jar_path = 'spark_job_files/log_reg_explicit_parallelism/target/scala-2.11/log-reg-explicit-parallelism_2.11-1.0.jar'
+real_iterations = 50
+synth_iterations = 1000000
+real_max_time = 600
+synth_max_time = 3600
+fixed_replication = 3

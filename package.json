@@ -1,10 +1,10 @@
 {
-  "name": "ml_cloud_scheduler",
+  "name": "profiling_web_app",
   "version": "1.0.0",
-  "description": "Website for machine learning scheduler",
+  "description": "Web interface for profiling big data analytics jobs.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/kmalta/MLSchedule"
+    "url": "https://github.com/kmalta/profiling-web-app"
   },
   "main": "node_src/javascript/index.js",
   "scripts": {

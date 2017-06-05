@@ -2,7 +2,9 @@
 
 . ~/.profile
 
-sudo mv ~/all_hosts_file /etc/hosts
+
+cat hosts_file_beginning hadoop_conf_files/hosts_file_end > all_hosts_file
+sudo mv all_hosts_file /etc/hosts
 sudo chown root:root /etc/hosts
 sudo chmod 644 /etc/hosts
 

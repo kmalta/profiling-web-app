@@ -1,4 +1,0 @@
-INFO: Applying --exclude/--include
-INFO: Summary: 1 remote files to download
-INFO: Receiving file '/mnt/synth_data_1_0_0', please wait...
-File s3://synth-datasets-2k/synth_data_1_0_0 saved as '/mnt/synth_data_1_0_0' (352256 bytes in 0.1 seconds, 5.88 MB/s)
