@@ -48,7 +48,7 @@ source setup_app.sh
     source clean_files.sh
     ```
 
-**WARNING: This will delete any data created and start the app from a clean slate.  Only do this if you do not care about the data being lost.**
+   **WARNING: This will delete any data created and start the app from a clean slate.  Only do this if you do not care about the data being lost.**
 
 + To add a dataset:
     1. Upload your data to S3.
@@ -57,5 +57,5 @@ source setup_app.sh
         ```bash
         cp templates/dataset.cfg.template data_configs/aws/"<your dataset's name>".cfg
         ```
-    4. Fill out the fields for the dataset file.  For an example see _templates/example-dataset.cfg_
+    4. Fill out the fields for the dataset file.  For an example see **templates/example-dataset.cfg**.
 
