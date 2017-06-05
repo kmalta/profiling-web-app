@@ -23,7 +23,7 @@ npm --prefix $PROFILE_WEB_APP_HOME/node_src install
 curl -O https://fastdl.mongodb.org/osx/mongodb-osx-x86_64-3.0.4.tgz
 tar -zxvf mongodb-osx-x86_64-3.0.4.tgz
 mkdir -p mongodb
-mv mongodb-osx-x86_64-3.0.4/ mongodb
+mv mongodb-osx-x86_64-3.0.4 mongodb
 rm mongodb-osx-x86_64-3.0.4.tgz
 
 #SET MONGODB PATH VARIABLES
