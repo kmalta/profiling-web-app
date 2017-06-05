@@ -7,12 +7,12 @@ from boto.ec2.blockdevicemapping import BlockDeviceMapping, EBSBlockDeviceType
 
 def create_security_group(conn):
     try:
-        if len(conn.get_all_security_groups([cloud_name + '-default'])) != 0:
-            conn.delete_security_group(cloud_name + '-default')
+        if len(conn.get_all_security_groups([security_group])) != 0:
+            conn.delete_security_group(security_group)
     except:
         1
     try:
-        sg = conn.create_security_group(cloud_name + '-default', 'AWS security group, open to all.')
+        sg = conn.create_security_group(security_group, 'AWS security group, open to all.')
 
         ip_protocols = ['tcp', 'udp', 'icmp']
         port_ranges = [(0, 65535), (0, 65535), (-1, -1)]

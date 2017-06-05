@@ -3,6 +3,11 @@ secret_key = ''
 
 launch_type = 'on-demand'
 
+aws_regions = ['us-west-1', 'us-west-2', 'us-east-1', 'us-east-2']
+aws_instance_types = ['c4.xlarge', 'm4.xlarge', 'r4.2xlarge']
+aws_on_demand_prices = [0.262, 0.279, 0.593]
+
+
 cloud = 'aws'
 security_group = cloud + '-default'
 key_name = cloud + '-key'
