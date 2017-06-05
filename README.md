@@ -1,4 +1,4 @@
-# Profiling Web Application
+# Epoch Profiling Web Application for Logistic Regression in Spark
 ## Master's Project for UCSB's RACELab
 
     The repository contains a project whose description will change soon.
@@ -15,7 +15,7 @@
 5. If your AWS account has a sufficient spot limit, set **launch_type = 'spot'**.  You will see considerable savings (up to 10x) by using this option.  Otherwise, you must keep **launch_type='on-demand'**.
 6. Create a copy of your AWS private key, copy it to the path below, and ensure the permissions are set to 600:
     ```bash
-    cp ```text**<your private key's current path>**``` cloud_configs/aws/aws-key.pem
+    cp "<your private key's current path>" cloud_configs/aws/aws-key.pem
     chmod 600 cloud_configs/aws/aws-key.pem
     ```
     *cloud_configs/aws/aws-key.pem*
@@ -56,7 +56,7 @@ source setup_app.sh
     2. Make the dataset readable by all.
     3. Copy the template:
         ```bash
-        cp templates/dataset.cfg.template data_configs/aws/```text**<your dataset's name>**```.cfg
+        cp templates/dataset.cfg.template data_configs/aws/"<your dataset's name>".cfg
         ```
     4. Fill out the fields for the dataset file.  For an example see _templates/example-dataset.cfg_
 
