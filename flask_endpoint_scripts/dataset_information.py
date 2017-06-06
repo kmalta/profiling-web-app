@@ -8,7 +8,7 @@ import math
 
 
 def get_data_stats(cfg_file):
-    f = open('data_configs/' + cloud + '/' + cfg_file + '.cfg', 'r')
+    f = open('data_configs/' + cfg_file + '.cfg', 'r')
     cfgs = f.readlines()
     f.close()
 
