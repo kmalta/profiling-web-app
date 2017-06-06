@@ -27,10 +27,6 @@ def profile(json_dict, ret_dict):
 
     conn = start_ec2_boto_connection()
 
-    # reservation_id = 'r-0089e7d55c520248c'
-    # reservations = get_reservations(conn)
-    # reservation = reservations[[str(res.id) for res in reservations].index(reservation_id)]
-    # bid = float(json_dict['bidPerMachine'])
     reservation, bid = launch_instances(conn, json_dict['bidPerMachine'], json_dict['machineType'], int(json_dict['numberOfMachines']) + 1)
 
     old_stdout.write("Working on profile for " + repr(reservation) + '\n')
@@ -46,7 +42,7 @@ def profile(json_dict, ret_dict):
     os.system('mv profiles/cloud_machine_request_logs/request' + unique_time + '-stdout.log ' + profile_dir + '/profile_logs/request-stdout.log')
     os.system('mv profiles/cloud_machine_request_logs/request' + unique_time + '-stderr.log ' + profile_dir + '/profile_logs/request-stderr.log')
 
-    instances = get_instances_from_reservation(reservation)
+    instances = get_instances_from_reservation(conn, reservation)
 
     dataset = configure_machines_for_spark_job_experiments(instances, json_dict['s3url'], profile_dir)
 
@@ -95,9 +91,6 @@ def profile(json_dict, ret_dict):
     print "Finished profile for ", repr(reservation)
 
     return
-
-
-
 
 
 

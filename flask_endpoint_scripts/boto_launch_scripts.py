@@ -39,9 +39,13 @@ def get_reservations(conn):
     reservations = conn.get_all_reservations()
     return reservations
 
-def get_instances_from_reservation(reservation):
-    instances = reservation.instances
-    return instances
+def get_reservation_from_spot_requests(conn, spot_requests):
+    instance_ids = [str(spot_res.instance_id) for spot_res in spot_requests]
+    return conn.get_all_reservations(instance_ids=instance_ids)[0]
+
+
+def get_instances_from_reservation(conn, reservation):
+    return reservation.instances
 
 def get_ips_from_instances(instances):
     return [instance.ip_address for instance in instances]
@@ -103,7 +107,7 @@ def wait_ssh(ips, reservation):
 def launch_and_wait(conn, instance_type, num_insts, image_id):
     reservation = launch_on_demand_instances(conn, instance_type, num_insts, image_id)
     print 'Secured reservation: ', repr(reservation)
-    instances = get_instances_from_reservation(reservation)
+    instances = get_instances_from_reservation(conn, reservation)
     print 'Waiting for instances to run.'
     for instance in instances:
         while instance.update() != "running":
@@ -117,15 +121,38 @@ def launch_and_wait(conn, instance_type, num_insts, image_id):
     wait_ssh(ips, reservation)
     return reservation
 
+def wait_for_spot_fulfillment(conn, spot_requests):
+    spot_req_ids = [spot_request.id for spot_request in spot_requests]
+    for spot_req_id in spot_req_ids:
+        print repr(spot_req_id)
+        spot_req = conn.get_all_spot_instance_requests(request_ids=[spot_req_id])[0]
+        while "fulfilled" not in repr(spot_req.status):
+            print repr(spot_req.status)
+            sleep(5)
+            spot_req = conn.get_all_spot_instance_requests(request_ids=[spot_req_id])[0]
+
+    return conn.get_all_spot_instance_requests(request_ids=spot_req_ids)
+
+def get_charged_spot_price(spot_requests):
+    price_arr = [float(spot_req.price) for spot_req in spot_requests]
+    print repr(price_arr)
+    return sum(price_arr)
 
 
 def spot_launch(conn, bid, instance_type, num_insts, image_id):
+    launch_group_name = 'Spot-Launch' + time_str()
     print repr(bid), repr(instance_type), repr(num_insts)
-    reservation = conn.request_spot_instances(float(bid), image_id, count=num_insts, type='one-time', 
+    spot_requests = conn.request_spot_instances(float(bid), image_id, count=num_insts, type='one-time', 
                                               instance_type=instance_type, key_name=key_name, 
-                                              security_groups=[security_group])
-    print 'Secured reservation: ', repr(reservation)
-    instances = get_instances_from_reservation(reservation)
+                                              security_groups=[security_group], launch_group=launch_group_name)
+
+    #CREATE CODE THAT IS RESERVATION AGNOSTIC. THIS WAY SPOT REQUESTS CAN FAIL GRACEFULLY!
+
+    spot_requests = wait_for_spot_fulfillment(conn, spot_requests)
+    reservation = get_reservation_from_spot_requests(conn, spot_requests)
+    print 'Secured reservations:', repr(reservation)
+    print 'The Launch Group Name is:', launch_group_name
+    instances = get_instances_from_reservation(conn, reservation)
     print 'Waiting for instances to run.'
     print repr(instances)
     for instance in instances:
@@ -139,13 +166,18 @@ def spot_launch(conn, bid, instance_type, num_insts, image_id):
     update_known_hosts(ips)
     print 'Waiting on SSH for each instance.'
     wait_ssh(ips, reservation)
-    return reservation
+
+
+    #WRITE THIS CODE!!
+    #actual_price = get_charged_spot_price(spot_requests)
+
+    actual_price = bid
+    return reservation, actual_price
 
 
 
 def main():
     1
-
 
 if __name__ == "__main__":
     main()
