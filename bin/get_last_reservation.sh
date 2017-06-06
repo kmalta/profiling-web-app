@@ -1,6 +1,6 @@
 #!/bin/bash
-
-LAST_DIR=$(ls -t profiles | head -1)
+. ~/.bash_profile
+LAST_DIR=$(ls -t $PROFILE_WEB_APP_HOME/profiles | head -1)
 PATH_ELEMS=(${LAST_DIR//\// })
 
 LENGTH=${#PATH_ELEMS[@]}

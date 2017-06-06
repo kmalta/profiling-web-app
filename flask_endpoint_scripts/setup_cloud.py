@@ -6,213 +6,77 @@ from process_results import *
 from synchronization_functions import *
 
 
-def get_host(ip, working_dir):
-    if os.path.isfile(working_dir + '/host'):
-        os.system('rm ' + working_dir + '/host')
-    py_ssh_to_log('', ip, 'source scripts/get_host.sh ' + cloud_abbrev, working_dir + '/profile_logs/remote_stdout.log', True)
-    py_scp_to_local('', ip, '~/host', working_dir + '/host')
 
-    f = open(working_dir + '/host', 'r')
-    data = f.readlines()
-    f.close()
-    return data[0].strip(), data[1].strip()
-
-
-def get_all_hosts(master_ip, ips, working_dir):
-    print 'Creating Node Data Structure.'
-    nodes_info = []
-    master_host, master_priv_ip = get_host(master_ip, working_dir)
-    nodes_info.append([master_ip, master_host, master_priv_ip])
-
-    f = open(working_dir + '/slave_priv_ips', 'w')
-    for ip in ips:
-        host, priv_ip = get_host(ip, working_dir)
-        nodes_info.append([ip, host, priv_ip])
-        f.write(priv_ip + '\n')
-    f.close()
-
-    return nodes_info
-
-def create_core_site_file(nodes_info, idx, working_dir):
-    py_ssh_to_log('', nodes_info[idx][0], 'cat hadoop_conf_files/core_site_beginning.xml host_master_tmp colon host_port_tmp hadoop_conf_files/core_site_ending.xml > hadoop_conf_files/core-site.xml', working_dir + '/profile_logs/remote_stdout.log', True)
-
-def create_yarn_site_file(nodes_info, idx, working_dir):
-    port = 9000
-
-    py_ssh_to_log('', nodes_info[idx][0], "echo -ne " + str(nodes_info[0][1]) + " > host_master_tmp; " + 
-                                   "echo -ne : > colon; " + 
-                                   "echo -ne " + str(port) + " > host_port_tmp", working_dir + '/profile_logs/remote_stdout.log', True)
-    py_ssh_to_log('', nodes_info[idx][0], 'cat hadoop_conf_files/yarn_site_beginning.xml host_master_tmp hadoop_conf_files/yarn_site_ending.xml > hadoop_conf_files/yarn-site.xml', working_dir + '/profile_logs/remote_stdout.log', True)
-
-
-def create_masters_file(nodes_info, working_dir):
-    f = open(working_dir + '/masters', 'w')
-    f.write(nodes_info[0][1] + '\n')
-    f.close()
-
-def create_slaves_file(nodes_info, working_dir):
-    f = open(working_dir + '/slaves', 'w')
-    count = 0
-    for node in nodes_info[1:]:
-        count += 1
-        f.write(node[1] + '\n')
-    f.close()
-
-def create_etc_hosts_file(nodes_info, idx, working_dir):
-    f = open(working_dir + '/hosts_file_beginning', 'w')
+def create_etc_hosts_file(instances, working_dir):
+    f = open(working_dir + '/hosts_file', 'w')
     f.write('127.0.0.1 localhost\n')
-    f.write(nodes_info[0][2] + ' ' + nodes_info[0][1] + '\n')
-    count = 0
-    for node in nodes_info[1:]:
-        count += 1
-        f.write(node[2] + ' ' + node[1] + '\n')
-    f.write('\n')
+    f.write(get_priv_ip(instances[0]) + ' master' + '\n')
+    for i in range(1, len(instances)):
+        f.write(get_priv_ip(instances[i])+ ' slave' + str(i) + '\n')
     f.close()
 
 
-def setup_passwordless_ssh(master_ip, master_priv_ip, working_dir):
-    cmd_arr = ['source ~/scripts/master_passwordless_ssh.sh', remote_pem_path, master_ip, master_priv_ip, cloud_abbrev]
-    py_ssh_to_log('', master_ip, ' '.join(cmd_arr), working_dir + '/profile_logs/remote_stdout.log', True)
+def setup_passwordless_ssh(master_instance, working_dir):
+    cmd_arr = ['source ~/scripts/master_passwordless_ssh.sh', remote_pem_path, get_ip(master_instance)]
+    py_ssh_to_log('', get_ip(master_instance), ' '.join(cmd_arr), working_dir + '/profile_logs/remote_stdout.log', True)
 
 
+def configure_master_node(instances, replication, working_dir):
+    setup_passwordless_ssh(instances[0], working_dir)
+
+    cmd_arr = ['source', 'scripts/namenode_env_vars.sh', str(replication), str(len(instances) - 1)]
+    py_ssh_to_log('', get_ip(instances[0]), ' '.join(cmd_arr), working_dir + '/profile_logs/remote_stdout.log', True)
+
+def configure_slave_node(instances, slave_instance, replication, working_dir):
+    cmd_arr = ['source', 'scripts/datanode_env_vars.sh', str(replication), str(len(instances) - 1)]
+    py_ssh_to_log('', get_ip(slave_instance), ' '.join(cmd_arr), working_dir + '/profile_logs/remote_stdout.log', True)
 
 
-def configure_master_node(nodes_info, working_dir):
-    master_ip = nodes_info[0][0]
-    master_priv_ip = nodes_info[0][2]
-
-    py_scp_to_remote('', master_ip, working_dir + '/masters', 'masters')
-    py_scp_to_remote('', master_ip, working_dir + '/slaves', 'slaves')
-
-    py_ssh_to_log('', master_ip, 'source hadoop_conf_files/all_env_vars.sh', working_dir + '/profile_logs/remote_stdout.log', True)
-    setup_passwordless_ssh(master_ip, master_priv_ip, working_dir)
-    py_ssh_to_log('', master_ip, 'source hadoop_conf_files/namenode_env_vars.sh ' + cloud_abbrev, working_dir + '/profile_logs/remote_stdout.log', True)
-
-
-
-def configure_slave_node(nodes_info, idx, working_dir):
-    ip = nodes_info[idx][0]
-    py_ssh_to_log('', ip, 'source hadoop_conf_files/all_env_vars.sh', working_dir + '/profile_logs/remote_stdout.log', True)
-    py_ssh_to_log('', ip, 'source hadoop_conf_files/datanode_env_vars.sh ' + nodes_info[0][2] + ' ' + nodes_info[0][1] + ' ' + cloud_abbrev, working_dir + '/profile_logs/remote_stdout.log', True)
-
-
-def configure_spark(nodes_info, working_dir):
+def configure_spark(instances, working_dir):
     f = open(working_dir + '/spark_slaves', 'w')
-    for node in nodes_info[1:]:
-        f.write(node[0] + '\n')
+    for inst in instances[1:]:
+        f.write(get_ip(inst) + '\n')
     f.close()
-
-    py_scp_to_remote('', nodes_info[0][0], working_dir + '/spark_slaves', spark_home + '/conf/slaves')
-
+    py_scp_to_remote('', get_ip(instances[0]), working_dir + '/spark_slaves', spark_home + '/conf/slaves')
 
 
-def start_spark(master_ip, working_dir):
-    py_ssh_to_log('', master_ip, spark_home + '/sbin/start-master.sh', working_dir + '/profile_logs/remote_stdout.log', True)
-    py_ssh_to_log('', master_ip, spark_home + '/sbin/start-slaves.sh', working_dir + '/profile_logs/remote_stdout.log', True)
+def start_spark(master_instance, working_dir):
+    py_ssh_to_log('', get_ip(master_instance), spark_home + '/sbin/start-master.sh', working_dir + '/profile_logs/remote_stdout.log', True)
+    py_ssh_to_log('', get_ip(master_instance), spark_home + '/sbin/start-slaves.sh', working_dir + '/profile_logs/remote_stdout.log', True)
 
-def stop_spark(master_ip, working_dir):
-    py_ssh_to_log('', master_ip, spark_home + '/sbin/stop-slaves.sh', working_dir + '/profile_logs/remote_stdout.log', True)
-    py_ssh_to_log('', master_ip, spark_home + '/sbin/stop-master.sh', working_dir + '/profile_logs/remote_stdout.log', True)
+def stop_spark(master_instance, working_dir):
+    py_ssh_to_log('', get_ip(master_instance), spark_home + '/sbin/stop-slaves.sh', working_dir + '/profile_logs/remote_stdout.log', True)
+    py_ssh_to_log('', get_ip(master_instance), spark_home + '/sbin/stop-master.sh', working_dir + '/profile_logs/remote_stdout.log', True)
 
-def scala_send_spark_job(nodes_info, jar_path):
-    for node in nodes_info:
-        py_scp_to_remote('', node[0], jar_path, 'jars/' + jar_path.split('/')[-1])
+def move_spark_conf(instances, worker_type, working_dir):
+    if working_dir != '':
+        for inst in instances:
+            cp_str_arr = ['cp', spark_home + '/conf/spark_machine_conf_files/' + cloud + '/' + worker_type + '.conf', spark_home + '/conf/spark-defaults.conf']
+            py_ssh_to_log('', get_ip(inst), ' '.join(cp_str_arr), working_dir + '/profile_logs/remote_stdout.log', True)
 
-def euca_get_params(worker_type, num_cores, working_dir):
-    worker_type = get_euca_worker_type(worker_type)
-    if 'hi1.4xlarge' in worker_type:
-        os.system('cp spark_conf_files/' + cloud + '/hi1.4xlarge.conf ' + working_dir + '/spark-defaults.conf')
-        return '35000m', '35000m', '--conf spark.driver.maxResultSize=7g', 2*num_cores
-    elif 'm1.large' in worker_type:
-        os.system('cp spark_conf_files/' + cloud + '/m1.large.conf ' + working_dir + '/spark-defaults.conf')
-        return '11500m', '11500m', '--conf spark.driver.maxResultSize=7g', num_cores
-    else:
-        os.system('cp spark_conf_files/' + cloud + '/cg1.4xlarge.conf ' + working_dir + '/spark-defaults.conf')
-        return '4000m', '4000m', '', num_cores
 
-def aws_get_params(worker_type, num_cores, working_dir):
+def get_params(instances, worker_type, working_dir):
+    num_cores = len(instances*4)
     if 'r4.2xlarge' in worker_type:
-        os.system('cp spark_conf_files/' + cloud + '/r4.2xlarge.conf ' + working_dir + '/spark-defaults.conf')
+        move_spark_conf(instances, 'r4.2xlarge', working_dir)
         return '48000m', '48000m', '--conf spark.driver.maxResultSize=10g', 2*num_cores
     elif 'm4.xlarge' in worker_type:
-        os.system('cp spark_conf_files/' + cloud + '/m4.xlarge.conf ' + working_dir + '/spark-defaults.conf')
+        move_spark_conf(instances, 'm4.xlarge', working_dir)
         return '11500m', '11500m', '--conf spark.driver.maxResultSize=7g', num_cores
     else:
-        os.system('cp spark_conf_files/' + cloud + '/c4.xlarge.conf ' + working_dir + '/spark-defaults.conf')
+        move_spark_conf(instances, 'c4.xlarge', working_dir)
         return '4000m', '4000m', '', num_cores
 
 
-
-def get_params(worker_type, num_machs, working_dir):
-    num_cores = num_machs*4
-    if cloud == 'aristotle':
-        return euca_get_params(worker_type, num_cores, working_dir)
-    elif cloud == 'aws':
-        return aws_get_params(worker_type, num_cores, working_dir)
-    else:
-        print "WE DID NOT RECEIVE AN APPROPRIATE CLOUD NAME"
-
-
-def get_cores(worker_type, num_machs):
-    t1, t2, t3, num_cores = get_params(worker_type, num_machs, 'spark_conf_files')
+def get_cores(instances, worker_type):
+    t1, t2, t3, num_cores = get_params(instances, worker_type, '')
     return num_cores
 
-
-def clean_up_job(dataset, master_ip, nodes_info, working_dir):
-    py_ssh_to_log('', master_ip, '/usr/local/hadoop/bin/hdfs dfs -rm /' + dataset + '; /usr/local/hadoop/bin/hdfs dfs -ls /', working_dir + '/profile_logs/remote_stdout.log', True)
-
-def scala_run_spark_job(nodes_info, worker_type, master_port, file_name, hadoop_master_port, jar, num_features, iterations, log_path, synth):
+def clean_up_job(dataset, master_instance, working_dir):
+    py_ssh_to_log('', get_ip(master_instance), '/usr/local/hadoop/bin/hdfs dfs -rm /' + dataset + '; /usr/local/hadoop/bin/hdfs dfs -ls /', working_dir + '/profile_logs/remote_stdout.log', True)
 
 
-    #NON-YARN
-    driver_mem = ''
-    executor_mem = ''
-    spark_max_result = ''
-    num_machs = len(nodes_info[1:])
-    num_cores = 4*num_machs
-    num_partitions = num_cores
-
-    working_dir = '/'.join(log_path.split('/')[:-2])
-
-
-    for node in nodes_info:
-        py_scp_to_remote('', node[0], 'spark_conf_files/log4j.properties', spark_home + '/conf/log4j.properties')
-        py_scp_to_remote('', node[0], 'spark_conf_files/hadoop-log4j.properties', '~/log4j.properties')
-        py_ssh_to_log('', node[0], 'sudo mv ~/log4j.properties /usr/local/hadoop/etc/hadoop/log4j.properties', working_dir + '/profile_logs/remote_stdout.log', True)
-
-
-    local_dir = '--conf spark.local.dir=/mnt/spark/'
-
-    driver_mem, executor_mem, spark_max_reult, num_cores = get_params(worker_type, num_cores, working_dir)
-
-    for node in nodes_info:
-        py_scp_to_remote('', node[0], working_dir + '/spark-defaults.conf', spark_home + '/conf/spark-defaults.conf')
-
-
-
-    run_str = [
-               spark_home + '/bin/spark-submit',
-               '--verbose',
-               '--master', 'spark://' + nodes_info[0][1] + ':7077',
-               '--deploy-mode client ',
-               '--driver-memory ' + driver_mem,
-               '--executor-memory ' + executor_mem,
-               spark_max_result,
-               '--num-executors', str(num_machs),\
-               '--conf spark.default.parallelism=' + str(num_cores),
-               local_dir,
-               jar_pref + jar,
-               str(num_features), nodes_info[0][1], str(hadoop_master_port),
-               file_name, str(iterations), str(num_partitions)
-              ]
-
-
-    master_ip = nodes_info[0][0]
-
-    print log_path
-    print "@@@@@@@@@@@@@@@  " + ' '.join(run_str)
-    py_ssh_to_log('', master_ip, ' '.join(run_str), log_path, False)
-
+def wait_and_terminate_spark_job(master_instance, synth, working_dir, log_path):
 
     start_time = time()
 
@@ -223,7 +87,7 @@ def scala_run_spark_job(nodes_info, worker_type, master_port, file_name, hadoop_
         while(time() < real_max_time + start_time):
             if os.path.exists(time_out_check_path):
                 os.system('rm ' + time_out_check_path)
-            py_ssh_to_log('', master_ip, 'jps', time_out_check_path, True)
+            py_ssh_to_log('', get_ip(master_instance), 'jps', time_out_check_path, True)
             f = open(time_out_check_path, 'r')
             output = f.read()
             f.close()
@@ -236,173 +100,143 @@ def scala_run_spark_job(nodes_info, worker_type, master_port, file_name, hadoop_
 
     if finished_flag == 0:
         os.system('rm ' + time_out_check_path)
-        py_ssh_to_log('', master_ip, 'jps', time_out_check_path, True)
+        py_ssh_to_log('', get_ip(master_instance), 'jps', time_out_check_path, True)
         f = open(time_out_check_path, 'r')
         readl = f.readlines()
         f.close()
         for line in readl:
             if 'SparkSubmit' in line or '-- process information unavailable' in line:
                 pid = line.split()[0]
-                py_ssh_to_log('', master_ip, 'kill ' + pid, working_dir + '/profile_logs/remote_stdout.log', True)
+                py_ssh_to_log('', get_ip(master_instance), 'kill ' + pid, working_dir + '/profile_logs/remote_stdout.log', True)
                 while(1):
                     os.system('rm ' + time_out_check_path)
-                    py_ssh_to_log('', master_ip, 'jps', time_out_check_path, True)
+                    py_ssh_to_log('', get_ip(master_instance), 'jps', time_out_check_path, True)
                     f = open(time_out_check_path, 'r')
                     output = f.read()
                     f.close()
                     if 'SparkSubmit' not in output and '-- process information unavailable' not in output:
                         break
 
-    return
+
+def scala_run_spark_job(instances, worker_type, file_name, num_features, iterations, log_path, synth):
+
+    working_dir = '/'.join(log_path.split('/')[:-2])
+    local_dir = '--conf spark.local.dir=/mnt/spark/'
+
+    driver_mem, executor_mem, spark_max_result, num_cores = get_params(instances, worker_type, working_dir)
+
+    run_str = [
+               spark_home + '/bin/spark-submit',
+               '--verbose',
+               '--master', 'spark://master:7077',
+               '--deploy-mode client ',
+               '--driver-memory ' + driver_mem,
+               '--executor-memory ' + executor_mem,
+               spark_max_result,
+               '--num-executors', str(len(instances) - 1),\
+               '--conf spark.default.parallelism=' + str(num_cores),
+               local_dir,
+               jar_pref + jar_name,
+               str(num_features), file_name, str(iterations), str(num_cores)
+              ]
+
+
+    print log_path
+    print repr(run_str)
+    py_ssh_to_log('', get_ip(instances[0]), ' '.join(run_str), log_path, False)
+
+    working_dir = '/'.join(log_path.split('/')[:-2])
+    wait_and_terminate_spark_job(instances[0], synth, working_dir, log_path)
+
+
+def configure_hadoop(instances, working_dir):
+    create_etc_hosts_file(instances, working_dir)
+    for i, inst in enumerate(instances):
+        py_scp_to_remote('', get_ip(inst), working_dir + '/slave_pub_ips', 'slave_pub_ips')
+        py_scp_to_remote('', get_ip(inst), working_dir + '/hosts_file', 'hosts_file')
+
+    configure_nodes(instances, working_dir)
 
 
 
-def create_hdfs_site_file(nodes_info, replication, idx, working_dir):
+def configure_nodes(instances, working_dir):
+    replication = fixed_replication
+    if replication < len(instances) - 1:
+        replication = len(instances) - 1
 
-    py_ssh_to_log('', nodes_info[idx][0], "echo -ne " + str(replication) + " > replication_tmp; " + 
-                                   "echo -ne file:///mnt/namenode > namenode_path; " + 
-                                   "echo -ne file:///mnt/datanode > datanode_path", working_dir + '/profile_logs/remote_stdout.log', True)
-    cat_arg = ['cat hadoop_conf_files/hdfs_site_beginning.xml replication_tmp ' + 
-               'hadoop_conf_files/hdfs_site_middle_1.xml namenode_path ' + 
-               'hadoop_conf_files/hdfs_site_middle_2.xml datanode_path ' + 
-               'hadoop_conf_files/hdfs_site_ending.xml ' + 
-               '> hadoop_conf_files/hdfs-site.xml']
-    py_ssh_to_log('', nodes_info[idx][0], cat_arg[0], working_dir + '/profile_logs/remote_stdout.log', True)
-
-
-def configure_hadoop(nodes_info, replication, working_dir):
-
-    #PARAMS FOR HADOOP
-    num_machs = len(nodes_info) - 1
-
-    if num_machs < replication:
-        replication = num_machs
-
-
-    f = open(working_dir + '/hostfile', 'w')
-    for node in nodes_info[1:]:
-        f.write(node[0] + '\n')
+    f = open(working_dir + '/slave_pub_ips', 'w')
+    for inst in instances[1:]:
+        configure_slave_node(instances, inst, replication, working_dir)
+        f.write(get_ip(inst) + '\n')
     f.close()
 
-    preconfigure_nodes(nodes_info, working_dir)
-
-    for i, node in enumerate(nodes_info):
-        create_yarn_site_file(nodes_info, i, working_dir)
-        create_core_site_file(nodes_info, i, working_dir)
-        create_hdfs_site_file(nodes_info, replication, i, working_dir)
-
-        py_scp_to_remote('', node[0], working_dir + '/hostfile', 'hostfile')
-        create_etc_hosts_file(nodes_info, i, working_dir)
-        py_scp_to_remote('', node[0], working_dir + '/hosts_file_beginning', 'hosts_file_beginning')
+    for inst in instances:
+        py_scp_to_remote('', get_ip(inst), working_dir + '/slave_pub_ips', 'aws/slave_pub_ips')
+    configure_master_node(instances, replication, working_dir)
 
 
-
-
-def configure_nodes(nodes_info, working_dir):
-
-    for idx in range(len(nodes_info) - 1):
-        configure_slave_node(nodes_info, idx + 1, working_dir)
-
-    configure_master_node(nodes_info, working_dir)
-
-def preconfigure_nodes(nodes_info, working_dir):
-    create_masters_file(nodes_info, working_dir)
-    create_slaves_file(nodes_info, working_dir)
-
-
-
-
-
-def get_dataset(s3url, master_ip, working_dir):
+def get_dataset(s3url, master_instance, working_dir):
     get_data_arr = ['python scripts/get_s3_file_using_boto.py', s3url, cloud, key_id, secret_key]
-    if cloud == 'aristotle':
-        get_data_arr.append(s3_service_path)
-        get_data_arr.append(s3_host)
-    elif cloud == 'aws':
-        get_data_arr.append(aws_region)
-        get_data_arr.append(aws_endpoint)
-    else:
-        print "WE DID NOT RECEIVE AN APPROPRIATE CLOUD NAME"
-
-    get_data = ' '.join(get_data_arr)
-
-    flag = 0
-    py_ssh_to_log('', master_ip, get_data, working_dir + '/profile_logs/remote_stdout.log', True)
+    py_ssh_to_log('', get_ip(master_instance), ' '.join(get_data_arr), working_dir + '/profile_logs/remote_stdout.log', True)
 
 
-
-
-
-def configure_machines_for_spark_job_experiments(s3url, working_dir, replication, instance_ips, test):
+def configure_machines_for_spark_job_experiments(instances, s3url, working_dir):
 
     dataset = s3url.split('/')[-1]
 
-
     log_dir = working_dir + '/profile_logs'
 
-    master_ip = instance_ips[0]
-    f = open(working_dir + '/host_master', 'w')
-    f.write(master_ip + '\n')
+    f = open(working_dir + '/master_ip', 'w')
+    f.write(get_ip(instances[0]) + '\n')
     f.close()
 
-    ips = instance_ips[1:]
-    nodes_info = get_all_hosts(master_ip, ips, working_dir)
-    if test == True:
-        return dataset, nodes_info
+    get_dataset(s3url, instances[0], working_dir)
+    configure_hadoop(instances, working_dir)
+    configure_spark(instances, working_dir)
+    py_ssh_to_log('', get_ip(instances[0]), 'source scripts/restart_hadoop.sh ' + remote_pem_path, working_dir + '/profile_logs/remote_stdout.log', True)
+    start_spark(instances[0], working_dir)
 
-    os.system('cp config_file_templates/hosts_file_end ' + working_dir + '/')
-
-    get_dataset(s3url, master_ip, working_dir)
-    configure_hadoop(nodes_info, replication, working_dir)
-    configure_nodes(nodes_info, working_dir)
-    configure_spark(nodes_info, working_dir)
-    py_ssh_to_log('', master_ip, 'source scripts/restart_hadoop.sh ' + remote_pem_path, working_dir + '/profile_logs/remote_stdout.log', True)
-    start_spark(master_ip, working_dir)
-
-    return dataset, nodes_info
+    return dataset
 
 
 
-def create_comm_hdfs_file(dataset, master_ip, comm_samples, working_dir):
-    py_ssh_to_log('', master_ip, 'head -n ' + str(comm_samples) + ' /mnt/' + dataset + ' > /mnt/' + dataset + '_comm; /usr/local/hadoop/bin/hdfs dfs -put /mnt/' + dataset + '_comm /; /usr/local/hadoop/bin/hdfs dfs -ls /', working_dir + '/profile_logs/remote_stdout.log', True)
+def create_comm_hdfs_file(dataset, master_instance, comm_samples, working_dir):
+    py_ssh_to_log('', get_ip(master_instance), 'head -n ' + str(comm_samples) + ' /mnt/' + dataset + ' > /mnt/' + dataset + '_comm; /usr/local/hadoop/bin/hdfs dfs -put /mnt/' + dataset + '_comm /; /usr/local/hadoop/bin/hdfs dfs -ls /', working_dir + '/profile_logs/remote_stdout.log', True)
 
-def create_full_hdfs_file(dataset, master_ip, working_dir):
-    py_ssh_to_log('', master_ip, '/usr/local/hadoop/bin/hdfs dfs -put /mnt/' + dataset + ' /; /usr/local/hadoop/bin/hdfs dfs -ls /', working_dir + '/profile_logs/remote_stdout.log', True)
+def create_full_hdfs_file(dataset, master_instance, working_dir):
+    py_ssh_to_log('', get_ip(master_instance), '/usr/local/hadoop/bin/hdfs dfs -put /mnt/' + dataset + ' /; /usr/local/hadoop/bin/hdfs dfs -ls /', working_dir + '/profile_logs/remote_stdout.log', True)
 
-def create_synth_hdfs_file(features, master_ip, comm_samples, working_dir):
+def create_synth_hdfs_file(features, master_instance, comm_samples, working_dir):
     dataset = 'synth_' + str(features)
-    py_scp_to_remote('', master_ip, 'synth_datasets/' + dataset, '/mnt')
-    py_ssh_to_log('', master_ip, 'head -n ' + str(comm_samples) + ' /mnt/' + dataset + ' > /mnt/' + dataset + '_temp; /usr/local/hadoop/bin/hdfs dfs -put /mnt/' + dataset + '_temp /' + dataset + '; /usr/local/hadoop/bin/hdfs dfs -ls /', working_dir + '/profile_logs/remote_stdout.log', True)
+    py_scp_to_remote('', get_ip(master_instance), 'synth_datasets/' + dataset, '/mnt')
+    py_ssh_to_log('', get_ip(master_instance), 'head -n ' + str(comm_samples) + ' /mnt/' + dataset + ' > /mnt/' + dataset + '_temp; /usr/local/hadoop/bin/hdfs dfs -put /mnt/' + dataset + '_temp /' + dataset + '; /usr/local/hadoop/bin/hdfs dfs -ls /', working_dir + '/profile_logs/remote_stdout.log', True)
 
 
-def run_spark_experiment(dataset, nodes_info, worker_type, jar_path, num_features, iterations, log_path, synth, original_dataset):
-    master_ip = nodes_info[0][0]
-    comm_samples = get_cores(worker_type, len(nodes_info) - 1)
+def run_spark_experiment(dataset, instances, worker_type, num_features, iterations, log_path, synth, original_dataset):
+    comm_samples = get_cores(instances, worker_type)
     working_dir = '/'.join(log_path.split('/')[:-2])
 
-    scala_send_spark_job(nodes_info, jar_path)
     if 'comm' in dataset:
-        create_comm_hdfs_file('_'.join(dataset.split('_')[:-1]), master_ip, comm_samples, working_dir)
+        create_comm_hdfs_file('_'.join(dataset.split('_')[:-1]), instances[0], comm_samples, working_dir)
     elif synth == False:
-        create_full_hdfs_file(dataset, master_ip, working_dir)
+        create_full_hdfs_file(dataset, instances[0], working_dir)
     else:
-        clean_up_job(original_dataset, master_ip, nodes_info, working_dir)
-        clean_up_job(original_dataset + '_comm', master_ip, nodes_info, working_dir)
-        create_synth_hdfs_file(num_features, master_ip, comm_samples, working_dir)
+        clean_up_job(original_dataset, instances[0], working_dir)
+        clean_up_job(original_dataset + '_comm', instances[0], working_dir)
+        create_synth_hdfs_file(num_features, instances[0], comm_samples, working_dir)
         num_features = 10**num_features
 
-    jar = jar_path.split('/')[-1]
-    scala_run_spark_job(nodes_info, worker_type, 7077, dataset, 9000, jar, num_features, iterations, log_path, synth)
+    scala_run_spark_job(instances, worker_type, dataset, num_features, iterations, log_path, synth)
 
     return
 
-def wait_for_run_to_complete(master_ip, log_path):
+def wait_for_run_to_complete(master_instance, log_path):
     check_path = log_path.split('profile_logs')[0] + 'block_next_run'
 
     while(1):
         if os.path.exists(check_path):
             os.system('rm ' + check_path)
-        py_ssh_to_log('', master_ip, 'jps', check_path, True)
+        py_ssh_to_log('', get_ip(master_instance), 'jps', check_path, True)
         f = open(check_path, 'r')
         output = f.read()
         f.close()
@@ -412,9 +246,9 @@ def wait_for_run_to_complete(master_ip, log_path):
     return
 
 
-def run_spark_experiment_wrapper(dataset, nodes_info, worker_type, jar_path, num_features, iterations, log_path, synth, original_dataset):
-    run_spark_experiment(dataset, nodes_info, worker_type, jar_path, num_features, iterations, log_path, synth, original_dataset)
-    wait_for_run_to_complete(nodes_info[0][0], log_path)
+def run_spark_experiment_wrapper(dataset, instances, worker_type, num_features, iterations, log_path, synth, original_dataset):
+    run_spark_experiment(dataset, instances, worker_type, num_features, iterations, log_path, synth, original_dataset)
+    wait_for_run_to_complete(instances[0], log_path)
 
 def main():
     1

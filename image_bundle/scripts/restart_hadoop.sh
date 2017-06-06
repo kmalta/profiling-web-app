@@ -1,7 +1,7 @@
 #!/bin/bash
 #1: pem path
 
-host_path=~/hostfile
+host_path=~/aws/slave_pub_ips
 pem_path=~/$1
 
 source /home/ubuntu/scripts/stop_hadoop.sh

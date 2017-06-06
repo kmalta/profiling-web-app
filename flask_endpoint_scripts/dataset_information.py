@@ -25,13 +25,8 @@ def get_data_stats(cfg_file):
     dataset_dict['samples'] = samples
     dataset_dict['features'] = features
     dataset_dict['num_workers'] = 4;
+    dataset_dict['s3url'] = 'https://s3-us-west-1.amazonaws.com/' + s3_bucket + '/' + s3_name
 
-    if cloud == 'aristotle':
-        dataset_dict['s3url'] = 's3://' + s3_bucket + '/' + s3_name
-    elif cloud == 'aws':
-        dataset_dict['s3url'] = 'https://s3-us-west-1.amazonaws.com/' + s3_bucket + '/' + s3_name
-    else:
-        print "WE DID NOT RECEIVE AN APPROPRIATE CLOUD NAME"
 
 
     inst_types = ['c4.xlarge', 'm4.xlarge', 'r4.2xlarge']

@@ -25,11 +25,13 @@ def profile(json_dict, ret_dict):
     old_stderr = sys.stderr
     sys.stderr = mystderr = open('profiles/cloud_machine_request_logs/request' + unique_time + '-stderr.log', 'w', buffering=0)
 
-    #BOTO Setup
     conn = start_ec2_boto_connection()
 
-    test = False
-    reservation, bid = spot_launch(conn, json_dict['bidPerMachine'], json_dict['machineType'], int(json_dict['numberOfMachines']) + 1)
+    # reservation_id = 'r-0089e7d55c520248c'
+    # reservations = get_reservations(conn)
+    # reservation = reservations[[str(res.id) for res in reservations].index(reservation_id)]
+    # bid = float(json_dict['bidPerMachine'])
+    reservation, bid = launch_instances(conn, json_dict['bidPerMachine'], json_dict['machineType'], int(json_dict['numberOfMachines']) + 1)
 
     old_stdout.write("Working on profile for " + repr(reservation) + '\n')
 
@@ -44,20 +46,14 @@ def profile(json_dict, ret_dict):
     os.system('mv profiles/cloud_machine_request_logs/request' + unique_time + '-stdout.log ' + profile_dir + '/profile_logs/request-stdout.log')
     os.system('mv profiles/cloud_machine_request_logs/request' + unique_time + '-stderr.log ' + profile_dir + '/profile_logs/request-stderr.log')
 
-
-
     instances = get_instances_from_reservation(reservation)
-    instance_ips = get_ips_from_instances(instances)
 
-
-    dataset, nodes_info = configure_machines_for_spark_job_experiments(json_dict['s3url'], profile_dir, fixed_replication, instance_ips, test)
-    master_ip = nodes_info[0][0]
-
+    dataset = configure_machines_for_spark_job_experiments(instances, json_dict['s3url'], profile_dir)
 
     setup_time_end = time()
 
-    run_spark_experiment_wrapper(dataset + '_comm', nodes_info, json_dict['machineType'], fixed_jar_path, json_dict['features'], real_iterations, profile_dir + '/profile_logs/comm.log', False, dataset)
-    run_spark_experiment_wrapper(dataset, nodes_info, json_dict['machineType'], fixed_jar_path, json_dict['features'], real_iterations, profile_dir + '/profile_logs/comp.log', False, dataset)
+    run_spark_experiment_wrapper(dataset + '_comm', instances, json_dict['machineType'], json_dict['features'], profiling_iterations, profile_dir + '/profile_logs/comm.log', False, dataset)
+    run_spark_experiment_wrapper(dataset, instances, json_dict['machineType'], json_dict['features'], profiling_iterations, profile_dir + '/profile_logs/comp.log', False, dataset)
 
 
     profile_time_end = time()
@@ -68,7 +64,7 @@ def profile(json_dict, ret_dict):
         if features == 0:
             features = 1
 
-        run_spark_experiment_wrapper('synth_' + str(features), nodes_info, json_dict['machineType'], fixed_jar_path, features, synth_iterations, profile_dir + '/profile_logs/synth.log', True, dataset)
+        run_spark_experiment_wrapper('synth_' + str(features), instances, json_dict['machineType'],  features, synth_iterations, profile_dir + '/profile_logs/synth.log', True, dataset)
 
 
         arr = parse_log(profile_dir, 'synth')

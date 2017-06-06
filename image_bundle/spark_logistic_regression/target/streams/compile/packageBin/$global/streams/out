@@ -1,0 +1,29 @@
+[0m[[0minfo[0m] [0mPackaging /Users/Kevin/profiling-web-app-test/profiling-web-app/image_bundle/spark_logistic_regression/target/scala-2.11/pwa-logistic-regression_2.11-1.0.jar ...[0m
+[0m[[0mdebug[0m] [0mInput file mappings:[0m
+[0m[[0mdebug[0m] [0m	MlWarmstartTest$$anonfun$main$1.class[0m
+[0m[[0mdebug[0m] [0m	  /Users/Kevin/profiling-web-app-test/profiling-web-app/image_bundle/spark_logistic_regression/target/scala-2.11/classes/MlWarmstartTest$$anonfun$main$1.class[0m
+[0m[[0mdebug[0m] [0m	MlDataframeTest.class[0m
+[0m[[0mdebug[0m] [0m	  /Users/Kevin/profiling-web-app-test/profiling-web-app/image_bundle/spark_logistic_regression/target/scala-2.11/classes/MlDataframeTest.class[0m
+[0m[[0mdebug[0m] [0m	LogRegExplicitParallelism.class[0m
+[0m[[0mdebug[0m] [0m	  /Users/Kevin/profiling-web-app-test/profiling-web-app/image_bundle/spark_logistic_regression/target/scala-2.11/classes/LogRegExplicitParallelism.class[0m
+[0m[[0mdebug[0m] [0m	PWALogisticRegression.class[0m
+[0m[[0mdebug[0m] [0m	  /Users/Kevin/profiling-web-app-test/profiling-web-app/image_bundle/spark_logistic_regression/target/scala-2.11/classes/PWALogisticRegression.class[0m
+[0m[[0mdebug[0m] [0m	LogRegExplicitParallelism$$anonfun$main$1.class[0m
+[0m[[0mdebug[0m] [0m	  /Users/Kevin/profiling-web-app-test/profiling-web-app/image_bundle/spark_logistic_regression/target/scala-2.11/classes/LogRegExplicitParallelism$$anonfun$main$1.class[0m
+[0m[[0mdebug[0m] [0m	LogRegExplicitParallelism$.class[0m
+[0m[[0mdebug[0m] [0m	  /Users/Kevin/profiling-web-app-test/profiling-web-app/image_bundle/spark_logistic_regression/target/scala-2.11/classes/LogRegExplicitParallelism$.class[0m
+[0m[[0mdebug[0m] [0m	MlDataframeTest$$anonfun$main$1.class[0m
+[0m[[0mdebug[0m] [0m	  /Users/Kevin/profiling-web-app-test/profiling-web-app/image_bundle/spark_logistic_regression/target/scala-2.11/classes/MlDataframeTest$$anonfun$main$1.class[0m
+[0m[[0mdebug[0m] [0m	MlDataframeTest$.class[0m
+[0m[[0mdebug[0m] [0m	  /Users/Kevin/profiling-web-app-test/profiling-web-app/image_bundle/spark_logistic_regression/target/scala-2.11/classes/MlDataframeTest$.class[0m
+[0m[[0mdebug[0m] [0m	PWALogisticRegression$.class[0m
+[0m[[0mdebug[0m] [0m	  /Users/Kevin/profiling-web-app-test/profiling-web-app/image_bundle/spark_logistic_regression/target/scala-2.11/classes/PWALogisticRegression$.class[0m
+[0m[[0mdebug[0m] [0m	MlWarmstartTest$.class[0m
+[0m[[0mdebug[0m] [0m	  /Users/Kevin/profiling-web-app-test/profiling-web-app/image_bundle/spark_logistic_regression/target/scala-2.11/classes/MlWarmstartTest$.class[0m
+[0m[[0mdebug[0m] [0m	MlWarmstartTest$$anonfun$main$1$$anonfun$apply$1.class[0m
+[0m[[0mdebug[0m] [0m	  /Users/Kevin/profiling-web-app-test/profiling-web-app/image_bundle/spark_logistic_regression/target/scala-2.11/classes/MlWarmstartTest$$anonfun$main$1$$anonfun$apply$1.class[0m
+[0m[[0mdebug[0m] [0m	MlWarmstartTest.class[0m
+[0m[[0mdebug[0m] [0m	  /Users/Kevin/profiling-web-app-test/profiling-web-app/image_bundle/spark_logistic_regression/target/scala-2.11/classes/MlWarmstartTest.class[0m
+[0m[[0mdebug[0m] [0m	LogRegExplicitParallelism$$anonfun$main$1$$anonfun$apply$1.class[0m
+[0m[[0mdebug[0m] [0m	  /Users/Kevin/profiling-web-app-test/profiling-web-app/image_bundle/spark_logistic_regression/target/scala-2.11/classes/LogRegExplicitParallelism$$anonfun$main$1$$anonfun$apply$1.class[0m
+[0m[[0minfo[0m] [0mDone packaging.[0m

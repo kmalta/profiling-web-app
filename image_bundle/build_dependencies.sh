@@ -54,15 +54,31 @@ echo -e "export HADOOP_OPTS=-Djava.library.path="$HADOOP_HOME"/lib/native" >> ~/
 
 sudo chown ubuntu:ubuntu /mnt
 mkdir ~/jars
+mv pwa-logistic-regression_2.11-1.0.jar jars
+
+sudo mv ~/hadoop_conf_files/hadoop-env.sh $HADOOP_CONF_DIR/hadoop-env.sh
+sudo mv ~/hadoop_conf_files/core-site.xml $HADOOP_CONF_DIR/core-site.xml
+sudo mv ~/hadoop_conf_files/mapred-site.xml $HADOOP_CONF_DIR/mapred-site.xml
+sudo mv ~/hadoop_conf_files/hdfs-site.xml $HADOOP_CONF_DIR/hdfs-site.xml
+sudo mv ~/hadoop_conf_files/hadoop-log4j.properties $HADOOP_CONF_DIR/log4j.properties
 
 
+sudo rm $HADOOP_CONF_DIR/slaves
+sudo touch $HADOOP_CONF_DIR/masters $HADOOP_CONF_DIR/slaves
+echo -e "Master" >> temp_file
+sudo mv temp_file $HADOOP_CONF_DIR/masters
 
+sudo mv ~/hadoop_conf_files/spark-env.sh $SPARK_HOME_DIR/conf/spark-env.sh
+sudo mv ~/hadoop_conf_files/log4j.properties $SPARK_HOME_DIR/conf/log4j.properties
 
-sudo mv ~/ssh_config /etc/ssh/ssh_config
-sudo chown root:root /etc/ssh/ssh_config
-sudo chmod 644 /etc/ssh/ssh_config
-sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1; sudo sysctl -w net.ipv6.conf.default.disable_ipv6=1
-
+sudo mv spark_machine_conf_files $SPARK_HOME_DIR/conf/spark_machine_conf_files
 
 rm -rf *gz
-rm scripts/build_image_script.sh
+rm -rf ~/hadoop_conf_files
+
+sudo chown ubuntu:ubuntu /etc/ssh/ssh_config
+sudo chmod 644 /etc/ssh/ssh_config
+echo -e "    StrictHostKeyChecking no" >> /etc/ssh/ssh_config
+sudo chown root:root /etc/ssh/ssh_config
+
+sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1; sudo sysctl -w net.ipv6.conf.default.disable_ipv6=1

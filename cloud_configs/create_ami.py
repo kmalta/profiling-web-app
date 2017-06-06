@@ -22,18 +22,20 @@ def create_security_group(conn):
         1
 
 def setup_instance(ip):
-    cmd = ['tar', '-czf','image_bundle/scripts.tar.gz', '-C', 'image_bundle', 
-           'scripts', 'ssh_config', 'hadoop_conf_files','-C', '../cloud_configs', 
-           '/'.join(local_pem_path.split('/')[-2:])]
+    cmd = ['tar', '-czf','image_bundle/scripts.tar.gz', '-C', 'image_bundle', 'scripts', 
+           'hadoop_conf_files', 'spark_machine_conf_files', '-C', '../cloud_configs',
+           '/'.join(local_pem_path.split('/')[-2:]), '-C ../' + local_jar_path, jar_name]
 
     py_cmd_line(' '.join(cmd))
 
     py_scp_to_remote('', ip, 'image_bundle/scripts.tar.gz', '~/scripts.tar.gz')
+    py_cmd_line('rm image_bundle/scripts.tar.gz')
     py_scp_to_remote('', ip, 'image_bundle/build_dependencies.sh', '~/build_dependencies.sh')
 
     log_file = 'image_bundle/image_bundle_logs/image-bundle-stdout' + time_str() + '.log'
     py_ssh_to_log('', ip, 'source build_dependencies.sh', log_file, True)
     py_ssh_to_log('', ip, 'rm build_dependencies.sh', log_file, True)
+
 
     return log_file
 
