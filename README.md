@@ -1,7 +1,8 @@
 # Epoch Profiling Web App for Logistic Regression in Spark
 ## Master's Project for UCSB's RACELab
 
-   The repository contains a project whose description will change soon.
+   With our methodology, we’ve built a deliverable for users to profile the number of epochs a particular cluster configuration can achieve on their dataset in an hour.  The platform is built using modern web development technologies, and purchases machines as cheaply as possible through use of the AWS spot market.
+
 
 ## Building This Project
 
@@ -26,6 +27,7 @@ source setup_app.sh
 
    Note, this will request an instance, create a security group, build an AWS AMI, and terminate said instance.  The total cost of this is at most **$0.262** if **launch_type = 'on-demand'**.
 
+
 ## Using the Web Application
 
 + To start the node.js server and Flask endpoint:
@@ -35,6 +37,8 @@ source setup_app.sh
     ```
 
     Output for this can be found in the **server_logs** directory.
+
++ You can view the web application interface at http://localhost:5000
 
 + To stop the node.js server and Flask endpoint:
 
