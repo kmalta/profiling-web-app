@@ -57,8 +57,7 @@ def reboot_instances(conn, instance_ids):
 def terminate_instances_from_reservation(conn, reservation):
     print "Terminating Instances for Reservation: " + reservation.id + ". Arnold is Tearing it Up."
     instance_ids = [instance.id for instance in reservation.instances]
-    if terminate_instances == True:
-        conn.terminate_instances(instance_ids)
+    conn.terminate_instances(instance_ids, dry_run=dry_run)
 
 
 def start_ec2_boto_connection():

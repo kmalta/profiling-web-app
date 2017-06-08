@@ -13,6 +13,7 @@ key_name = cloud + '-key'
 cloud_abbrev = 'ip'
 user = 'ubuntu'
 aws_region = 'us-west-1'
+dry_run = False
 jar_pref = 'file:///home/ubuntu/jars/'
 aws_endpoint = 'ec2.' + aws_region + '.amazonaws.com'
 price_module_base_url = 'http://128.111.84.183/'

@@ -6,6 +6,9 @@ import numpy as np
 from time import sleep, gmtime, strftime
 from dateutil import parser
 
+from py_command_line_wrappers import *
+
+
 
 def time_str():
     return strftime("-%Y-%m-%d-%H-%M-%S", gmtime())
@@ -69,17 +72,20 @@ def smooth_synth_close(synth_close):
     return synth_close
 
 
-def compute_projection(real_comm, real_full, synth_close):
+def compute_projection(real_comm, real_full, synth_close, comp_overheads):
 
 
     synth_close = smooth_synth_close(synth_close)
 
 
-    epochs_profiled = len(real_comm)
+    epochs_profiled = min(min(len(real_full), len(real_comm)), len(synth_close))
+    real_full = real_full[:epochs_profiled]
+    real_comm = real_comm[:epochs_profiled]
+    synth_close = synth_close[:epochs_profiled]
+
     epoch_window = min(10, epochs_profiled - 3)
 
-    diff_close = [x - y for x,y in zip(real_comm, synth_close)]
-    diff_close_profiled = diff_close[:epochs_profiled]
+    diff_close_profiled = [x - y for x,y in zip(real_comm, synth_close)]
     comm_mean = np.median(diff_close_profiled[-epoch_window:])
     projected_comm = real_comm + [comm_mean + synth_close[j + epochs_profiled] for j in range(len(synth_close) - epochs_profiled)]
 
@@ -90,12 +96,12 @@ def compute_projection(real_comm, real_full, synth_close):
 
     projection_time = sum(real_comm) + sum(real_full)
 
-    accum = 0
+    accum = comp_overheads
     for i, elem in enumerate(projected):
         if i > 100 and elem > 5*projected[i-1]:
             projected[i] = np.median(synth_close[i - 10: i - 1])
         accum += projected[i]
-        if accum > 3600:
+        if accum > synth_max_time:
             return epochs_profiled, projected[:i + 1]
 
     return epochs_profiled, projected
@@ -117,7 +123,7 @@ def compute_profile_predictions(profile_json):
     comm_time = get_total_log_time('profiles/Reservation:' + profile_json['reservation_id'], 'comm')
     comp_overheads = full_time - sum(real_full)
 
-    offset, projected_values = compute_projection(real_comm, real_full, synth_profile)
+    offset, projected_values = compute_projection(real_comm, real_full, synth_profile, comp_overheads)
 
     ret_dict = {}
     ret_dict['algorithmic_overheads'] = comp_overheads

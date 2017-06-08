@@ -152,10 +152,11 @@ def scala_run_spark_job(instances, worker_type, file_name, num_features, iterati
 def configure_hadoop(instances, working_dir):
     create_etc_hosts_file(instances, working_dir)
     for i, inst in enumerate(instances):
-        py_scp_to_remote('', get_ip(inst), working_dir + '/slave_pub_ips', 'slave_pub_ips')
         py_scp_to_remote('', get_ip(inst), working_dir + '/hosts_file', 'hosts_file')
 
     configure_nodes(instances, working_dir)
+
+
 
 
 
