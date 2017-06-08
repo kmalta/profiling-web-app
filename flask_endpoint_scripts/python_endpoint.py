@@ -42,6 +42,7 @@ def schedule_profile(profile_str):
 @app.route('/get_profile_results/<path:profile_str>', methods=['GET'])
 @support_jsonp
 def compute_profile(profile_str):
+    print "IN GET PROFILE RESULTS"
     profile_json = json_loads_byteified(profile_str)
     ret_json = compute_profile_predictions(profile_json)
     return jsonify(ret_json)
@@ -52,6 +53,13 @@ def get_bid_info(bid_info):
     request_json = json_loads_byteified(bid_info)
     bid_json = dict(request_json['data'])
     ret_json = get_bid_wrapper(bid_json, request_json['numberOfMachines'])
+    return jsonify(ret_json)
+
+@app.route('/check_for_synth_profile/<path:which_synths>', methods=['GET'])
+@support_jsonp
+def get_synth_profiles(which_synths):
+    request_json = json_loads_byteified(which_synths)
+    ret_json = check_synth_profiles(request_json)
     return jsonify(ret_json)
 
 

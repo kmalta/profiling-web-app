@@ -77,29 +77,33 @@ def compute_projection(real_comm, real_full, synth_close, comp_overheads):
 
     synth_close = smooth_synth_close(synth_close)
 
+    print "Length of synth close:", len(synth_close)
+
 
     epochs_profiled = min(min(len(real_full), len(real_comm)), len(synth_close))
     real_full = real_full[:epochs_profiled]
     real_comm = real_comm[:epochs_profiled]
-    synth_close = synth_close[:epochs_profiled]
 
     epoch_window = min(10, epochs_profiled - 3)
 
-    diff_close_profiled = [x - y for x,y in zip(real_comm, synth_close)]
-    comm_mean = np.median(diff_close_profiled[-epoch_window:])
-    projected_comm = real_comm + [comm_mean + synth_close[j + epochs_profiled] for j in range(len(synth_close) - epochs_profiled)]
+    diff_close_profiled = [x - y for x,y in zip(real_comm, synth_close[:epochs_profiled])]
+    comm_median = np.median(diff_close_profiled[-epoch_window:])
+    projected_comm = real_comm + [comm_median + synth_close[j + epochs_profiled] for j in range(len(synth_close) - epochs_profiled)]
 
 
     real_diff_profiled = [x - y for x,y in zip(real_full, real_comm)]
-    mean = np.median(real_diff_profiled[-epoch_window:])
-    projected = real_full + [mean + projected_comm[j + epochs_profiled] for j in range(len(synth_close) - epochs_profiled)]
+    median = np.median(real_diff_profiled[-epoch_window:])
+    projected = real_full + [median + projected_comm[j + epochs_profiled] for j in range(len(synth_close) - epochs_profiled)]
 
     projection_time = sum(real_comm) + sum(real_full)
 
-    accum = comp_overheads
-    for i, elem in enumerate(projected):
-        if i > 100 and elem > 5*projected[i-1]:
-            projected[i] = np.median(synth_close[i - 10: i - 1])
+    print "comp overheads:", repr(comp_overheads)
+    print "projected length:", repr(len(projected))
+
+    accum = 0
+    for i in range(len(projected)):
+        if i > 100 and projected[i] > 5*projected[i-1]:
+            projected[i] = np.median(projected[i - 10: i - 1])
         accum += projected[i]
         if accum > synth_max_time:
             return epochs_profiled, projected[:i + 1]
@@ -123,6 +127,7 @@ def compute_profile_predictions(profile_json):
     comm_time = get_total_log_time('profiles/Reservation:' + profile_json['reservation_id'], 'comm')
     comp_overheads = full_time - sum(real_full)
 
+    print "ABOUT TO PROCESS RESULTS!!"
     offset, projected_values = compute_projection(real_comm, real_full, synth_profile, comp_overheads)
 
     ret_dict = {}

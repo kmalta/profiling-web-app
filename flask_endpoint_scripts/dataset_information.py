@@ -1,4 +1,4 @@
-import sys
+import sys, os
 sys.path.insert(0,'.')
 
 from setup_cloud import *
@@ -44,3 +44,11 @@ def get_data_stats(cfg_file):
 
     return dataset_dict
 
+def check_synth_profiles(input_json):
+    log_feats = str(input_json['log_features'])
+    files = os.listdir('synth_comm_array_files')
+    filtered_files = [file for file in files if 'synth_' + log_feats in file]
+    synth_profiles = [0 for i in range(16)]
+    for file in filtered_files:
+        synth_profiles[int(file.split('_')[-1]) - 1] = 1
+    return {'synth_profiles': synth_profiles}

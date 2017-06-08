@@ -4,6 +4,10 @@
 
 kill -SIGINT $(ps aux | grep 'node' | awk '{print $2}') &> /dev/null
 kill -9 $(ps aux | grep 'python_endpoint.py' | awk '{print $2}') &> /dev/null
+kill -9 $(ps aux | grep 'mongo' | awk '{print $2}') &> /dev/null
+
+rm $PROFILE_WEB_APP_HOME/db/mongod.lock
+
 
 python $PROFILE_WEB_APP_HOME/bin/terminate_and_show_reservations.py terminate all > /dev/null 2>&1
 source delete_pyc_files.sh > /dev/null 2>&1

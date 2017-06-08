@@ -171,25 +171,34 @@ app.post('/dataset_db_save', function(req, res){
   dataset.save(function(err) {
     if (err) throw err;
     console.log('Dataset saved successfully!');
+    var log_feats = Math.round(Math.log10(req.body.features));
+
+    if (log_feats == 0) {
+      log_feats = 1;
+    }
+    console.log("IN HERE!")
+    SynthProfile.find({log_features: log_feats}, function (err, synth_profile) {
+      if (synth_profile === undefined || synth_profile.length == 0) {
+        json_send = JSON.stringify({'log_features': log_feats})
+        var xhttp = new XMLHttpRequest();
+        xhttp.open("GET", 'http://0.0.0.0:8080/check_for_synth_profile/' + json_send, true);
+        xhttp.send();
+        xhttp.onload = function() {
+          console.log("GOT JSON RESPONSE!")
+          data = JSON.parse(xhttp.responseText)
+          var new_synth_profile = new SynthProfile({
+            log_features: log_feats,
+            machine_counts: data['synth_profiles']
+          });
+          new_synth_profile.save(function(err) {
+            if (err) throw err;
+            console.log('New synth profile created and saved!');
+          });
+        }
+      }
+    });  
   });
 
-  var log_feats = Math.round(Math.log10(req.body.features));
-
-  if (log_feats == 0) {
-    log_feats = 1;
-  }
-  SynthProfile.find({log_features: log_feats}, function (err, synth_profile) {
-    if (synth_profile === undefined || synth_profile.length == 0) {
-      var new_synth_profile = new SynthProfile({
-        log_features: log_feats,
-        machine_counts: Array.apply(null, Array(16)).map(Number.prototype.valueOf,0)
-      });
-      new_synth_profile.save(function(err) {
-        if (err) throw err;
-        console.log('New synth profile created and saved!');
-      });
-    }
-  });  
 });
 
 app.post('/profile_button_submit', function(req, res) {

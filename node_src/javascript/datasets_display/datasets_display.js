@@ -169,7 +169,7 @@ function populate_db_info_table(db_entry, idx) {
 function populate_dataset_profiles_table(profile_db_entry, idx) {
     var bid = profile_db_entry.actual_bid_per_machine;
     if (bid == undefined) {
-        bid = 'Bid Not Yet Placed'
+        bid = 'Profile Not Complete'
     }
     else {
         bid = '$' + bid.toString();

@@ -5,7 +5,6 @@
 
 if [ $1 = "clean" ]; then
     source stop_script.sh > /dev/null 2>&1
-    rm -rf $PROFILE_WEB_APP_HOME/db/*
     source start_script.sh > /dev/null 2>&1
 
     rm -rf $PROFILE_WEB_APP_HOME/profiles/Reservation*
@@ -15,6 +14,7 @@ if [ $1 = "clean" ]; then
     mongo mlwebapp --eval "db.dropDatabase()" > /dev/null 2>&1
     source stop_script.sh > /dev/null 2>&1
     rm -rf $PROFILE_WEB_APP_HOME/server_logs/*
+    rm -rf $PROFILE_WEB_APP_HOME/db/*
     echo
     echo "All your directories have been thoroughly cleaned."
 fi

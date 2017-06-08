@@ -21,11 +21,11 @@
     ```
 7. Build the dependencies with the following command:
 
-```bash
-source setup_app.sh
-```
+    ```bash
+    source setup_app.sh
+    ```
 
-   Note, this will request an instance, create a security group, build an AWS AMI, and terminate said instance.  The total cost of this is at most **$0.262** if **launch_type = 'on-demand'**.
+    Note, this will request an instance, create a security group, build an AWS AMI, and terminate said instance.  The total cost of this is at most **$0.262** if **launch_type = 'on-demand'**.
 
 
 ## Using the Web Application

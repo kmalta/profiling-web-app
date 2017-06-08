@@ -76,15 +76,14 @@ def clean_up_job(dataset, master_instance, working_dir):
     py_ssh_to_log('', get_ip(master_instance), '/usr/local/hadoop/bin/hdfs dfs -rm /' + dataset + '; /usr/local/hadoop/bin/hdfs dfs -ls /', working_dir + '/profile_logs/remote_stdout.log', True)
 
 
-def wait_and_terminate_spark_job(master_instance, synth, working_dir, log_path):
+def wait_and_terminate_spark_job(master_instance, synth, start_time, working_dir, log_path):
 
-    start_time = time()
 
     time_out_check_path = log_path.split('profile_logs')[0] + 'time_out_check'
     finished_flag = 0
     if synth == False:
         finished_flag = 0
-        while(time() < real_max_time + start_time):
+        while(time() < profiling_max_time + start_time):
             if os.path.exists(time_out_check_path):
                 os.system('rm ' + time_out_check_path)
             py_ssh_to_log('', get_ip(master_instance), 'jps', time_out_check_path, True)
@@ -96,7 +95,8 @@ def wait_and_terminate_spark_job(master_instance, synth, working_dir, log_path):
                 break
             sleep(5)
     else:
-        sleep(synth_max_time)
+        while(time() < synth_max_time + start_time):
+            sleep(int(min(synth_max_time)/2), 60)
 
     if finished_flag == 0:
         os.system('rm ' + time_out_check_path)
@@ -143,10 +143,11 @@ def scala_run_spark_job(instances, worker_type, file_name, num_features, iterati
 
     print log_path
     print repr(run_str)
+    start_time = time()
     py_ssh_to_log('', get_ip(instances[0]), ' '.join(run_str), log_path, False)
 
     working_dir = '/'.join(log_path.split('/')[:-2])
-    wait_and_terminate_spark_job(instances[0], synth, working_dir, log_path)
+    wait_and_terminate_spark_job(instances[0], synth, start_time,  working_dir, log_path)
 
 
 def configure_hadoop(instances, working_dir):
